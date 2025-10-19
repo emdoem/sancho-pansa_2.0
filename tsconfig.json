@@ -1,0 +1,8 @@
+// This is part of Vite scaffolding  needs to be updated.
+{
+  "files": [],
+  "references": [
+    { "path": "./tsconfig.app.json" },
+    { "path": "./tsconfig.node.json" }
+  ]
+}

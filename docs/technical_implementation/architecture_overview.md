@@ -119,4 +119,21 @@ This architecture gives you:
     ✅ Different file paths per device (device-specific mappings)
 
     ✅ Integration with Mixxx (M3U playlist export)
+
+# Combinating main process & renderer
+
+In development, both Electron (main) and Vite (renderer) run concurrently:
+
+    Vite runs a dev server on a port (e.g., http://localhost:3000)
+
+    Electron main process launches the app loading the URL served by Vite:
+
+ts
+mainWindow.loadURL('http://localhost:3000');
+
+In production, you build the React app (Vite outputs static files) and your Electron main process loads those files locally:
+
+ts
+mainWindow.loadFile(path.join(__dirname, '../renderer/index.html'));
+
     ​
