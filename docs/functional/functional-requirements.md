@@ -1,6 +1,4 @@
-# User stories
-
-## Table of Contents
+# Table of Contents
 
 - [User stories](#user-stories)
   - [Catalog music files](#catalog-music-files)
@@ -10,6 +8,8 @@
   - [Synchronise library on several devices](#synchronise-library-on-several-devices)
   - [Manage playlists through the app](#manage-playlists-through-the-app)
 - [Primary User Flows](#primary-user-flows)
+
+# User stories
 
 ## Catalog music files
 

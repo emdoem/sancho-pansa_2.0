@@ -118,22 +118,24 @@
     Each duplicate group shows:
 
     text
+    ```
     ┌─────────────────────────────────────────────────────┐
     │ ● Artist Name - Track Title                         │
     │   Album: [Album Name] | Length: 3:45                │
-    │   [2 duplicates found]                        [Expand]│
+    │   [2 duplicates found]                      [Expand]│
     └─────────────────────────────────────────────────────┘
-
+    
     When expanded:
     ┌─────────────────────────────────────────────────────┐
     │ ○ Keep this   File 1                                │
-    │   Path: /Music/Artist/Album/01-track.mp3           │
-    │   Bitrate: 320kbps | Size: 8.5 MB | Format: MP3    │
-    │                                                      │
-    │ ● Remove      File 2                         [Preview]│
+    │   Path: /Music/Artist/Album/01-track.mp3            │
+    │   Bitrate: 320kbps | Size: 8.5 MB | Format: MP3     │
+    │                                                     │
+    │ ● Remove      File 2                       [Preview]│
     │   Path: /Downloads/track.mp3                        │
-    │   Bitrate: 192kbps | Size: 5.2 MB | Format: MP3    │
+    │   Bitrate: 192kbps | Size: 5.2 MB | Format: MP3     │
     └─────────────────────────────────────────────────────┘
+    ```
 
     Radio buttons let user choose which to keep
 
@@ -163,6 +165,7 @@
     Pattern builder:
 
 text
+```
 Naming Pattern:
 [Dropdown: Track Number] - [Dropdown: Artist] - [Dropdown: Title]
 
@@ -181,12 +184,15 @@ Additional options:
 
 Folder Structure:
 [Artist] / [Album (Year)] / [files]
+```
 
 ### Preview examples (3-4 sample files):
 
 text
+```
 Before: artist-song final copy.mp3
 After:  01 - Artist Name - Song Title.mp3
+```
 
 ### Buttons: "Apply to Library" (with warning), "Save as Default"
 
@@ -286,6 +292,7 @@ After:  01 - Artist Name - Song Title.mp3
 Here's how the flows connect (described as a flowchart):
 
 text
+```
 START → [Select Folders]
           ↓
      [Scan Files] → [Catalog Created]
@@ -313,3 +320,5 @@ START → [Select Folders]
      [Use on Other Device] ─────────┘
           ↓
      [Import New Files] → loops back
+
+```
