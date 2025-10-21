@@ -8,8 +8,13 @@
   },
   "scripts": {
     "test": "test",
-    "dev": "vite",
-    "build": "tsc -b && vite build",
+    "dev:watch": "vite",
+    "dev": "concurrently \"vite\" \"wait-on http://localhost:5173 && cross-env VITE_DEV_SERVER_URL=http://localhost:5173 electron .\"",    
+    "build": "vite build && tsc -p tsconfig.main.json",
+    "build:main": "tsc -p tsconfig.main.json",
+    "dev:build": "npm run build:main && concurrently \"vite\" \"wait-on http://localhost:5173 && cross-env VITE_DEV_SERVER_URL=http://localhost:5173 electron .\"",
+    "start": "electron .",
+    "start:build": "npm run build && electron .",
     "lint": "eslint .",
     "preview": "vite preview"
   },
@@ -24,6 +29,9 @@
   },
   "homepage": "https://github.com/emdoem/sancho-pansa_2.0#readme",
   "devDependencies": {
+    "concurrently": "^7.0.0",
+    "wait-on": "^7.0.0",
+    "cross-env": "^7.0.3",
     "electron": "^38.3.0",
     "@eslint/js": "^9.36.0",
     "@types/node": "^24.6.0",
