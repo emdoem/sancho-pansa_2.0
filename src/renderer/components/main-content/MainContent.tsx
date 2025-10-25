@@ -1,8 +1,12 @@
-import { Button, Stack, Typography } from '@mui/joy'
+import { Button, Stack, Typography } from '@mui/joy';
 
 export const MainContent = () => {
   return (
-    <Stack direction="column" sx={{ width: '100%', height: '100%', padding: 1 }} alignItems="stretch">
+    <Stack
+      direction="column"
+      sx={{ width: '100%', height: '100%', padding: 1 }}
+      alignItems="stretch"
+    >
       <Stack direction="row" justifyContent="center" sx={{ width: '100%' }}>
         <Typography level="h3">MainContent</Typography>
       </Stack>
@@ -15,5 +19,5 @@ export const MainContent = () => {
         </Stack>
       </Stack>
     </Stack>
-  )
-}
+  );
+};

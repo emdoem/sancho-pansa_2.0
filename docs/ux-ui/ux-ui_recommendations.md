@@ -32,7 +32,7 @@
 
     - Undo/history: Since you're modifying files, maintain a change log (especially for deleted files)
 
-​    - Preview everything: Before renaming or deleting, show clear before/after
+​ - Preview everything: Before renaming or deleting, show clear before/after
 
     - Progress feedback: File operations take time - show progress with ability to cancel
     ​

@@ -19,6 +19,7 @@
 ## Scenario 1: Same track edited on both devices while offline
 
 typescript
+
 ```
 class ConflictResolver {
   resolveTrackConflict(localTrack: Track, remoteTrack: Track): Track {
@@ -28,7 +29,7 @@ class ConflictResolver {
     } else if (remoteTrack.last_modified > localTrack.last_modified) {
       return remoteTrack;
     }
-    
+
     // If timestamps equal, use device ID for deterministic resolution
     if (this.deviceId > remoteTrack.device_id) {
       return localTrack;
@@ -42,6 +43,7 @@ class ConflictResolver {
 ## Scenario 2: Track deleted on one device, edited on another
 
 typescript
+
 ```
 // Deletion always wins
 if (operation.type === 'delete') {
@@ -58,6 +60,7 @@ if (operation.type === 'delete') {
 ## Scenario 3: Duplicate detection results differ
 
 typescript
+
 ```
 // Keep duplicate decisions in separate table with timestamp
 CREATE TABLE duplicate_decisions (
@@ -70,8 +73,8 @@ CREATE TABLE duplicate_decisions (
 
 // Most recent decision wins
 const latestDecision = db.prepare(`
-  SELECT decision FROM duplicate_decisions 
-  WHERE track_id = ? 
+  SELECT decision FROM duplicate_decisions
+  WHERE track_id = ?
   ORDER BY decided_at DESC LIMIT 1
 `).get(trackId);
 ```
@@ -87,6 +90,7 @@ const latestDecision = db.prepare(`
 ## Solution: Store paths relative to a configured root + device-specific mappings
 
 typescript
+
 ```
 // Configuration stored per-device
 interface DeviceConfig {
@@ -116,7 +120,7 @@ const configB = {
 function catalogTrack(absolutePath: string): Track {
   const relativePath = path.relative(config.musicRootPath, absolutePath);
   const fileHash = calculateFileHash(absolutePath);
-  
+
   return {
     id: uuid(),
     file_path: relativePath,  // e.g., "Artist/Album/01-track.mp3"
@@ -141,6 +145,7 @@ Problem: Dropbox/Google Drive sync isn't instant
 ### Detect external database modifications:
 
 typescript
+
 ```
 // Watch for database file changes
 fs.watch(dbPath, (eventType, filename) => {
@@ -155,6 +160,7 @@ fs.watch(dbPath, (eventType, filename) => {
 ### Lock mechanism to prevent simultaneous writes:
 
 typescript
+
 ```
 class DatabaseLock {
   async acquireLock(): Promise<boolean> {
@@ -167,13 +173,13 @@ class DatabaseLock {
       return false;
     }
   }
-  
+
   async withLock<T>(fn: () => T): Promise<T> {
     const acquired = await this.acquireLock();
     if (!acquired) {
       await this.waitForLock();
     }
-    
+
     try {
       return fn();
     } finally {
@@ -186,6 +192,7 @@ class DatabaseLock {
 ### User feedback during sync:
 
 typescript
+
 ```
 // Show sync status in UI
 interface SyncStatus {
@@ -206,12 +213,13 @@ if (isSyncInProgress) {
 For M3U playlist export compatibility with Mixxx:
 
 typescript
+
 ```
 class PlaylistManager {
   // Export playlist to M3U format
   exportToM3U(playlistId: string, outputPath: string) {
     const tracks = this.getPlaylistTracks(playlistId);
-    
+
     const m3uContent = [
       '#EXTM3U',
       ...tracks.map(track => {
@@ -222,14 +230,14 @@ class PlaylistManager {
         ].join('\n');
       })
     ].join('\n');
-    
+
     fs.writeFileSync(outputPath, m3uContent, 'utf-8');
   }
-  
+
   // Import playlist from various formats
   importPlaylist(filePath: string): Playlist {
     const ext = path.extname(filePath).toLowerCase();
-    
+
     switch (ext) {
       case '.m3u':
       case '.m3u8':
@@ -239,11 +247,11 @@ class PlaylistManager {
       // ... other formats
     }
   }
-  
+
   // When syncing, update paths to match current device
   syncPlaylistPaths(playlistId: string) {
     const tracks = this.getPlaylistTracks(playlistId);
-    
+
     tracks.forEach(track => {
       const localPath = this.pathResolver.resolvePathForDevice(track.id);
       if (!fs.existsSync(localPath)) {

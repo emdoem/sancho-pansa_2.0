@@ -1,7 +1,5 @@
-import { Typography } from '@mui/joy'
+import { Typography } from '@mui/joy';
 
 export const BottomBar = () => {
-  return (
-    <Typography level="h1">BottomBar</Typography>
-  )
-}
+  return <Typography level="h1">BottomBar</Typography>;
+};

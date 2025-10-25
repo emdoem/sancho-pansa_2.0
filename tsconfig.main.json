@@ -12,11 +12,6 @@
     "skipLibCheck": true,
     "strict": true
   },
-  "include": [
-    "src/main/**/*"
-  ],
-  "exclude": [
-    "node_modules",
-    "dist"
-  ]
+  "include": ["src/main/**/*"],
+  "exclude": ["node_modules", "dist"]
 }

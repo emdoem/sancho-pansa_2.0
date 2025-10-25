@@ -1,32 +1,31 @@
-
 # Table of Contents
 
 - [Wireframe Descriptions for Key Screens]
-    - [Screen 1: Main Dashboard / Library View](#screen-1-main-dashboard--library-view)
-        - Purpose and Layout
-        - Key Interactions
-    - [Screen 2: Initial Folder Selection & Scan](#screen-2-initial-folder-selection--scan)
-        - Purpose and Layout
-        - During Scan Process
-    - [Screen 3: Duplicate Detection Results](#screen-3-duplicate-detection-results)
-        - Purpose and Layout
-        - Duplicate Groups Display
-        - Critical UX Considerations
-    - [Screen 4: File Naming Convention Settings](#screen-4-file-naming-convention-settings)
-        - Purpose and Layout
-        - Pattern Builder
-        - Preview Examples
-    - [Screen 5: Playlist Management](#screen-5-playlist-management)
-        - Purpose and Layout
-        - Two-Panel View
-        - Import Dialog
-    - [Screen 6: Device Synchronization](#screen-6-device-synchronization)
-        - Purpose and Layout
-        - Sync Dashboard
-        - Sync Options
-        - Critical Features
+  - [Screen 1: Main Dashboard / Library View](#screen-1-main-dashboard--library-view)
+    - Purpose and Layout
+    - Key Interactions
+  - [Screen 2: Initial Folder Selection & Scan](#screen-2-initial-folder-selection--scan)
+    - Purpose and Layout
+    - During Scan Process
+  - [Screen 3: Duplicate Detection Results](#screen-3-duplicate-detection-results)
+    - Purpose and Layout
+    - Duplicate Groups Display
+    - Critical UX Considerations
+  - [Screen 4: File Naming Convention Settings](#screen-4-file-naming-convention-settings)
+    - Purpose and Layout
+    - Pattern Builder
+    - Preview Examples
+  - [Screen 5: Playlist Management](#screen-5-playlist-management)
+    - Purpose and Layout
+    - Two-Panel View
+    - Import Dialog
+  - [Screen 6: Device Synchronization](#screen-6-device-synchronization)
+    - Purpose and Layout
+    - Sync Dashboard
+    - Sync Options
+    - Critical Features
 - [Complete User Flow Diagram](#complete-user-flow-diagram)
-   - Flowchart Description
+  - Flowchart Description
 
 # Wireframe Descriptions for Key Screens
 
@@ -61,6 +60,7 @@
 ### Key interaction: Users can select tracks, sort/filter, and launch key operations
 
 ​
+
 ## Screen 2: Initial Folder Selection & Scan
 
 ### Purpose: First-time setup to catalog music files
@@ -124,7 +124,7 @@
     │   Album: [Album Name] | Length: 3:45                │
     │   [2 duplicates found]                      [Expand]│
     └─────────────────────────────────────────────────────┘
-    
+
     When expanded:
     ┌─────────────────────────────────────────────────────┐
     │ ○ Keep this   File 1                                │
@@ -152,6 +152,7 @@
 ### Critical UX consideration: Users need confidence before deleting files. Preview/play functionality and clear visual comparison help
 
 ​
+
 ## Screen 4: File Naming Convention Settings
 
 ### Purpose: Configure unified naming rules to prevent future duplicates
@@ -165,6 +166,7 @@
     Pattern builder:
 
 text
+
 ```
 Naming Pattern:
 [Dropdown: Track Number] - [Dropdown: Artist] - [Dropdown: Title]
@@ -189,6 +191,7 @@ Folder Structure:
 ### Preview examples (3-4 sample files):
 
 text
+
 ```
 Before: artist-song final copy.mp3
 After:  01 - Artist Name - Song Title.mp3
@@ -287,11 +290,13 @@ After:  01 - Artist Name - Song Title.mp3
 ### Critical feature: Clear indication of sync status and conflict warnings before applying changes
 
 ​
+
 # Complete User Flow Diagram
 
 Here's how the flows connect (described as a flowchart):
 
 text
+
 ```
 START → [Select Folders]
           ↓

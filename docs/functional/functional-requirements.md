@@ -50,12 +50,12 @@ App has three main user journeys:
 
 1. Initial Library Setup Flow (First-time user)
 
-    Select music folder(s) → Scan & catalog files → Review metadata → Set naming convention preferences → Complete setup
+   Select music folder(s) → Scan & catalog files → Review metadata → Set naming convention preferences → Complete setup
 
 2. Duplicate Management Flow (Core feature)
 
-    View catalog → Run duplicate scan → Review duplicate groups → Select files to keep/remove → Apply changes to filesystem → Verify results
+   View catalog → Run duplicate scan → Review duplicate groups → Select files to keep/remove → Apply changes to filesystem → Verify results
 
 3. Ongoing Library Maintenance Flow (Regular use)
 
-    Import new files → Auto-detect duplicates → Manage playlists → Sync across devices
+   Import new files → Auto-detect duplicates → Manage playlists → Sync across devices
