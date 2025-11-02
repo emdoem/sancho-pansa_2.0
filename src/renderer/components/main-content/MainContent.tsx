@@ -1,3 +1,4 @@
+import { handleGetUserDataPath } from '../../utils/apiHandlers';
 import { Button, Stack, Typography, Alert } from '@mui/joy';
 import { useState } from 'react';
 
@@ -56,7 +57,7 @@ export const MainContent = () => {
           </Button>
           <Button variant="soft">Scan for Duplicates</Button>
           <Button variant="soft">Rename Files</Button>
-          <Button variant="soft">Import Playlist</Button>
+          <Button variant="soft" onClick={handleGetUserDataPath}>Import Playlist</Button>
         </Stack>
       </Stack>
     </Stack>

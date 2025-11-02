@@ -1,29 +1,24 @@
-import { dialog } from 'electron';
+import { app, dialog } from 'electron';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
 
 class FirstTimeSetup {
   async configure() {
-    // Step 1: Choose or create device ID
     const deviceId = this.generateDeviceId();
 
-    // Step 2: Select cloud sync location
     const cloudPath = await this.selectFolder(
       'Select your cloud sync folder (Dropbox, Google Drive, etc.)'
     );
 
-    // Step 3: Select music library location
     const musicPath = await this.selectFolder(
       'Select your music library folder'
     );
 
-    // Step 4: Check if database exists in cloud location
     const dbPath = path.join(cloudPath, 'music-library.db');
     const dbExists = fs.existsSync(dbPath);
 
     if (dbExists) {
-      // Existing library found
       const choice = await this.showDialog(
         'Existing library found. Use it or create new?',
         ['Use Existing', 'Create New']
@@ -35,11 +30,9 @@ class FirstTimeSetup {
         this.createNewLibrary(dbPath, musicPath, deviceId);
       }
     } else {
-      // First device setup
       this.createNewLibrary(dbPath, musicPath, deviceId);
     }
 
-    // Step 5: Save configuration
     this.saveConfig({
       deviceId,
       deviceName: os.hostname(),
@@ -100,8 +93,17 @@ class FirstTimeSetup {
   }
 
   private saveConfig(config: any): void {
-    // TODO: Implement saving configuration
-    console.log('Saving config:', config);
+    const userDataPath = app.getPath('userData');
+    const configPath = path.join(userDataPath, 'config.json');
+    
+    // Ensure the directory exists
+    if (!fs.existsSync(userDataPath)) {
+      fs.mkdirSync(userDataPath, { recursive: true });
+    }
+    
+    // Write the config as formatted JSON
+    fs.writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf-8');
+    console.log('Config saved to:', configPath);
   }
 }
 

@@ -8,8 +8,10 @@ const electronAPI = {
     return ipcRenderer.invoke('configure-music-library')
   },
   
-  // You can add more IPC methods here as needed
-  // Example: getConfig: () => ipcRenderer.invoke('get-config'),
+  exposeUserDataPath: () => {
+    console.log('exposeUserDataPath');
+    return ipcRenderer.invoke('expose-user-data-path');
+  },
 };
 
 // Expose the API to the renderer process

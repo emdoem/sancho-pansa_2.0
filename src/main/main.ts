@@ -3,16 +3,15 @@ import path from 'path';
 import FirstTimeSetup from './first-time-setup';
 
 function createWindow() {
-  // Resolve preload script path
   const preloadPath = path.join(__dirname, 'preload.js');
-  console.log('Preload path:', preloadPath); // Debug log
+  console.log('Preload path:', preloadPath);
   
   const mainWindow = new BrowserWindow({
     width: 1280,
     height: 800,
     webPreferences: {
       preload: preloadPath,
-      contextIsolation: true, // Required for contextBridge to work
+      contextIsolation: true,
       nodeIntegration: false,
     },
   });
@@ -25,11 +24,9 @@ function createWindow() {
   }
 }
 
-// Set up IPC handlers
 function setupIpcHandlers() {
   const firstTimeSetup = new FirstTimeSetup();
 
-  // Handle music library configuration
   ipcMain.handle('configure-music-library', async () => {
     try {
       await firstTimeSetup.configure();
@@ -41,6 +38,11 @@ function setupIpcHandlers() {
         message: error instanceof Error ? error.message : 'Unknown error occurred' 
       };
     }
+  });
+
+  ipcMain.handle('expose-user-data-path', async () => {
+    const userDataPath = app.getPath('userData');
+    return userDataPath;
   });
 }
 
