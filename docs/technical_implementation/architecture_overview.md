@@ -37,56 +37,56 @@ Your application needs to solve three core technical challenges:
 
 # Implementation architecture
 
-​┌───────────────────────────────────────────────────────┐
-│ Device A (Laptop 1)                                   │
-├───────────────────────────────────────────────────────┤
-│ ┌───────────────────────────────────────────────────┐ │
-│ │ Electron Main Process                             │ │
-│ │ ┌───────────────────────────────────────────────┐ │ │
-│ │ │ Filesystem Watcher                            │ │ │
-│ │ │ - Monitor music folder changes                │ │ │
-│ │ │ - Detect new/moved/deleted files              │ │ │
-│ │ └───────────────────────────────────────────────┘ │ │
-│ │ ┌───────────────────────────────────────────────┐ │ │
-│ │ │ Music File Operations                         │ │ │
-│ │ │ - Read metadata (ID3 tags)                    │ │ │
-│ │ │ - Calculate file hashes                       │ │ │
-│ │ │ - Rename/move/delete files                    │ │ │
-│ │ │ - Create new folder structure                 │ │ │
-│ │ └───────────────────────────────────────────────┘ │ │
-│ │ ┌───────────────────────────────────────────────┐ │ │
-│ │ │ Database Manager                              │ │ │
-│ │ │ - SQLite connection                           │ │ │
-│ │ │ - Transaction management                      │ │ │
-│ │ │ - Conflict detection                          │ │ │
-│ │ └───────────────────────────────────────────────┘ │ │
-│ │ ┌───────────────────────────────────────────────┐ │ │
-│ │ │ Path Resolver                                 │ │ │
-│ │ │ - Relative/absolute path conversion           │ │ │
-│ │ │ - Device-specific mappings                    │ │ │
-│ │ └───────────────────────────────────────────────┘ │ │
-│ └───────────────────────────────────────────────────┘ │
-│                      ↕ IPC                            │
-│ ┌───────────────────────────────────────────────────┐ │
-│ │ Renderer Process (React + TypeScript)             │ │
-│ │ - UI Components                                   │ │
-│ │ - State Management (Zustand/Redux)                │ │
-│ │ - User interactions                               │ │
-│ └───────────────────────────────────────────────────┘ │
-│                      ↓                                │
-│ /Users/you/Dropbox/MusicLibrary/                      │
-│ └── music-library.db ← SQLite Database                │
-└───────────────────────────────────────────────────────┘
-↓
-☁️ Cloud Sync (Dropbox)
-↓
-┌───────────────────────────────────────────────────────┐
-│ Device B (Laptop 2)                                   │
-│ (Same architecture as Device A)                       │
-│                                                       │
-│ /Users/other/Dropbox/MusicLibrary/                    │
-│ └── music-library.db ← Same Database                  │
-└───────────────────────────────────────────────────────┘
+​┌───────────────────────────────────────────────────────┐  
+│ Device A (Laptop 1)                                   │  
+├───────────────────────────────────────────────────────┤  
+│ ┌───────────────────────────────────────────────────┐ │  
+│ │ Electron Main Process                             │ │  
+│ │ ┌───────────────────────────────────────────────┐ │ │  
+│ │ │ Filesystem Watcher                            │ │ │  
+│ │ │ - Monitor music folder changes                │ │ │  
+│ │ │ - Detect new/moved/deleted files              │ │ │  
+│ │ └───────────────────────────────────────────────┘ │ │  
+│ │ ┌───────────────────────────────────────────────┐ │ │  
+│ │ │ Music File Operations                         │ │ │  
+│ │ │ - Read metadata (ID3 tags)                    │ │ │  
+│ │ │ - Calculate file hashes                       │ │ │  
+│ │ │ - Rename/move/delete files                    │ │ │  
+│ │ │ - Create new folder structure                 │ │ │  
+│ │ └───────────────────────────────────────────────┘ │ │  
+│ │ ┌───────────────────────────────────────────────┐ │ │  
+│ │ │ Database Manager                              │ │ │  
+│ │ │ - SQLite connection                           │ │ │  
+│ │ │ - Transaction management                      │ │ │  
+│ │ │ - Conflict detection                          │ │ │  
+│ │ └───────────────────────────────────────────────┘ │ │  
+│ │ ┌───────────────────────────────────────────────┐ │ │  
+│ │ │ Path Resolver                                 │ │ │  
+│ │ │ - Relative/absolute path conversion           │ │ │  
+│ │ │ - Device-specific mappings                    │ │ │  
+│ │ └───────────────────────────────────────────────┘ │ │  
+│ └───────────────────────────────────────────────────┘ │  
+│                      ↕ IPC                            │  
+│ ┌───────────────────────────────────────────────────┐ │  
+│ │ Renderer Process (React + TypeScript)             │ │  
+│ │ - UI Components                                   │ │  
+│ │ - State Management (Zustand/Redux)                │ │  
+│ │ - User interactions                               │ │  
+│ └───────────────────────────────────────────────────┘ │  
+│                      ↓                                │  
+│ /Users/you/Dropbox/MusicLibrary/                      │  
+│ └── music-library.db ← SQLite Database                │  
+└───────────────────────────────────────────────────────┘  
+↓  
+☁️ Cloud Sync (Dropbox)  
+↓  
+┌───────────────────────────────────────────────────────┐  
+│ Device B (Laptop 2)                                   │  
+│ (Same architecture as Device A)                       │  
+│                                                       │  
+│ /Users/other/Dropbox/MusicLibrary/                    │  
+│ └── music-library.db ← Same Database                  │  
+└───────────────────────────────────────────────────────┘  
 
 # Summary: Key Architecture Decisions
 
