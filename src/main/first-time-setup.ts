@@ -2,6 +2,7 @@ import { app, dialog } from 'electron';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
+import MusicLibraryDB from './database/db';
 
 class FirstTimeSetup {
   async configure() {
@@ -19,6 +20,7 @@ class FirstTimeSetup {
     const dbExists = fs.existsSync(dbPath);
 
     if (dbExists) {
+      console.log('Existing library found');
       const choice = await this.showDialog(
         'Existing library found. Use it or create new?',
         ['Use Existing', 'Create New']
@@ -30,6 +32,7 @@ class FirstTimeSetup {
         this.createNewLibrary(dbPath, musicPath, deviceId);
       }
     } else {
+      console.log('Creating new library');
       this.createNewLibrary(dbPath, musicPath, deviceId);
     }
 
@@ -88,20 +91,55 @@ class FirstTimeSetup {
     musicPath: string,
     deviceId: string
   ): void {
-    // TODO: Implement creating new library
-    console.log('Creating new library:', { dbPath, musicPath, deviceId });
+    const cloudSyncPath = path.dirname(dbPath);
+
+    if (!fs.existsSync(cloudSyncPath)) {
+      fs.mkdirSync(cloudSyncPath, { recursive: true });
+    }
+
+    // If database already exists and user chose to create new, remove it
+    // Also remove WAL and SHM files if they exist (from previous SQLite sessions)
+    if (fs.existsSync(dbPath)) {
+      fs.unlinkSync(dbPath);
+    }
+    const walPath = dbPath + '-wal';
+    const shmPath = dbPath + '-shm';
+    if (fs.existsSync(walPath)) {
+      fs.unlinkSync(walPath);
+    }
+    if (fs.existsSync(shmPath)) {
+      fs.unlinkSync(shmPath);
+    }
+    console.log('Creating new database instance');
+    // Create new database instance (this will create the SQLite file and initialize all tables)
+    const db = new MusicLibraryDB(cloudSyncPath, deviceId);
+
+    // Store device name in sync_metadata
+    const deviceName = os.hostname();
+    db.setMetadata('device_name', deviceName);
+
+    // Store music root path in sync_metadata
+    db.setMetadata('music_root_path', musicPath);
+
+    // Close the database connection (this ensures all changes are flushed to disk)
+    db.close();
+
+    // Verify the database file was created
+    if (!fs.existsSync(dbPath)) {
+      throw new Error(`Failed to create database file at ${dbPath}`);
+    }
+
+    console.log('New library created successfully:', { dbPath, musicPath, deviceId });
   }
 
   private saveConfig(config: any): void {
     const userDataPath = app.getPath('userData');
     const configPath = path.join(userDataPath, 'config.json');
     
-    // Ensure the directory exists
     if (!fs.existsSync(userDataPath)) {
       fs.mkdirSync(userDataPath, { recursive: true });
     }
     
-    // Write the config as formatted JSON
     fs.writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf-8');
     console.log('Config saved to:', configPath);
   }
