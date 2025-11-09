@@ -82,8 +82,21 @@ class FirstTimeSetup {
     musicPath: string,
     deviceId: string
   ): void {
-    // TODO: Implement loading existing library
-    console.log('Loading existing library:', { dbPath, musicPath, deviceId });
+    const cloudSyncPath = path.dirname(dbPath);
+
+    if (!fs.existsSync(dbPath)) {
+      throw new Error(`Database file not found at ${dbPath}`);
+    }
+
+    console.log('Loading existing database instance');
+    const db = new MusicLibraryDB(cloudSyncPath, deviceId);
+
+    const deviceName = os.hostname();
+    db.setMetadata('device_name', deviceName);
+    db.setMetadata('music_root_path', musicPath);
+    db.close();
+
+    console.log('Existing library loaded successfully:', { dbPath, musicPath, deviceId });
   }
 
   private createNewLibrary(
@@ -97,11 +110,10 @@ class FirstTimeSetup {
       fs.mkdirSync(cloudSyncPath, { recursive: true });
     }
 
-    // If database already exists and user chose to create new, remove it
-    // Also remove WAL and SHM files if they exist (from previous SQLite sessions)
     if (fs.existsSync(dbPath)) {
       fs.unlinkSync(dbPath);
     }
+    // Also remove WAL and SHM files if they exist (from previous SQLite sessions)
     const walPath = dbPath + '-wal';
     const shmPath = dbPath + '-shm';
     if (fs.existsSync(walPath)) {
@@ -111,24 +123,16 @@ class FirstTimeSetup {
       fs.unlinkSync(shmPath);
     }
     console.log('Creating new database instance');
-    // Create new database instance (this will create the SQLite file and initialize all tables)
     const db = new MusicLibraryDB(cloudSyncPath, deviceId);
 
-    // Store device name in sync_metadata
     const deviceName = os.hostname();
     db.setMetadata('device_name', deviceName);
-
-    // Store music root path in sync_metadata
     db.setMetadata('music_root_path', musicPath);
-
-    // Close the database connection (this ensures all changes are flushed to disk)
     db.close();
 
-    // Verify the database file was created
     if (!fs.existsSync(dbPath)) {
       throw new Error(`Failed to create database file at ${dbPath}`);
     }
-
     console.log('New library created successfully:', { dbPath, musicPath, deviceId });
   }
 

@@ -14,13 +14,8 @@ class MusicLibraryDB {
       timeout: 5000,
     });
 
-    // Enable WAL mode for better concurrent access
     this.db.pragma('journal_mode = WAL');
-
-    // Initialize tables before trying to query them
     this.initializeTables();
-
-    // Generate or retrieve unique device ID
     this.deviceId = deviceId ? this.setDeviceId(deviceId) : this.getOrCreateDeviceId();
   }
 
@@ -33,11 +28,9 @@ class MusicLibraryDB {
       .get();
 
     if (tableExists) {
-      // Tables already exist, skip creation
       return;
     }
 
-    // Create all tables from schema
     this.db.exec(`
       -- Core music catalog
       CREATE TABLE tracks (
