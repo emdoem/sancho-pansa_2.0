@@ -133,5 +133,3 @@ typescript
 ```
 mainWindow.loadFile(path.join(\_\_dirname, '../renderer/index.html'));
 ```
-
-    ​

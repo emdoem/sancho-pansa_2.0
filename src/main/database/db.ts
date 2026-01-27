@@ -16,7 +16,9 @@ class MusicLibraryDB {
 
     this.db.pragma('journal_mode = WAL');
     this.initializeTables();
-    this.deviceId = deviceId ? this.setDeviceId(deviceId) : this.getOrCreateDeviceId();
+    this.deviceId = deviceId
+      ? this.setDeviceId(deviceId)
+      : this.getOrCreateDeviceId();
   }
 
   private initializeTables(): void {
@@ -145,6 +147,64 @@ class MusicLibraryDB {
       .get(key) as { value: string } | undefined;
 
     return result ? result.value : null;
+  }
+
+  public insertTrack(trackData: {
+    id?: string;
+    file_path: string;
+    file_hash?: string;
+    artist?: string;
+    title?: string;
+    album?: string;
+    tempo?: number;
+    length?: number;
+    file_size?: number;
+    bitrate?: number;
+    format?: string;
+    last_modified?: number;
+  }): void {
+    const stmt = this.db.prepare(`
+      INSERT OR REPLACE INTO tracks (
+        id, file_path, file_hash, artist, title, album, tempo, length,
+        file_size, bitrate, format, last_modified, date_added
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+
+    stmt.run(
+      trackData.id || crypto.randomUUID(),
+      trackData.file_path,
+      trackData.file_hash || null,
+      trackData.artist || null,
+      trackData.title || null,
+      trackData.album || null,
+      trackData.tempo || null,
+      trackData.length || null,
+      trackData.file_size || null,
+      trackData.bitrate || null,
+      trackData.format || null,
+      trackData.last_modified || null,
+      Date.now()
+    );
+  }
+
+  public getTrackByPath(filePath: string): any {
+    return this.db
+      .prepare('SELECT * FROM tracks WHERE file_path = ?')
+      .get(filePath);
+  }
+
+  public getAllTracks(): any[] {
+    return this.db
+      .prepare('SELECT * FROM tracks ORDER BY artist, album, track_number')
+      .all();
+  }
+
+  public deleteTrack(trackId: string): void {
+    this.db.prepare('DELETE FROM tracks WHERE id = ?').run(trackId);
+    this.db.prepare('DELETE FROM device_paths WHERE track_id = ?').run(trackId);
+    this.db
+      .prepare('DELETE FROM playlist_tracks WHERE track_id = ?')
+      .run(trackId);
   }
 
   public close(): void {
