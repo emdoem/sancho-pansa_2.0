@@ -195,7 +195,7 @@ class MusicLibraryDB {
 
   public getAllTracks(): any[] {
     return this.db
-      .prepare('SELECT * FROM tracks ORDER BY artist, album, track_number')
+      .prepare('SELECT * FROM tracks ORDER BY artist, album, title')
       .all();
   }
 

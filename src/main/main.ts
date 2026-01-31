@@ -33,6 +33,15 @@ function setupIpcHandlers() {
   ipcMain.handle('configure-music-library', async () => {
     try {
       await firstTimeSetup.configure();
+
+      const config = getLibraryConfig();
+      if (config) {
+        const db = new MusicLibraryDB(path.dirname(config.dbPath));
+        const scanner = new MusicScanner(db);
+        await scanner.scanLibrary(config.musicRootPath);
+        db.close();
+      }
+
       return {
         success: true,
         message: 'Music library configured successfully',
@@ -61,7 +70,7 @@ function setupIpcHandlers() {
           return { success: false, message: 'Library not configured' };
         }
 
-        const db = new MusicLibraryDB(config.dbPath);
+        const db = new MusicLibraryDB(path.dirname(config.dbPath));
         const scanner = new MusicScanner(db);
 
         let result;
@@ -91,7 +100,7 @@ function setupIpcHandlers() {
         return { success: false, message: 'Library not configured' };
       }
 
-      const db = new MusicLibraryDB(config.dbPath);
+      const db = new MusicLibraryDB(path.dirname(config.dbPath));
       const tracks = db.getAllTracks();
       const stats = {
         totalTracks: tracks.length,
@@ -108,6 +117,57 @@ function setupIpcHandlers() {
         success: false,
         message:
           error instanceof Error ? error.message : 'Unknown error occurred',
+      };
+    }
+  });
+
+  ipcMain.handle('get-library-config', async () => {
+    try {
+      const config = getLibraryConfig();
+      if (!config) {
+        return { configured: false };
+      }
+      return { configured: true, config };
+    } catch (error) {
+      console.error('Error getting library config:', error);
+      return { configured: false };
+    }
+  });
+
+  ipcMain.handle('get-all-tracks', async () => {
+    try {
+      const config = getLibraryConfig();
+      if (!config) {
+        return {
+          success: false,
+          message: 'Library not configured',
+          tracks: [],
+        };
+      }
+
+      const db = new MusicLibraryDB(path.dirname(config.dbPath));
+      const tracks = db.getAllTracks().map((track) => ({
+        id: track.id,
+        title: track.title || 'Unknown',
+        artist: track.artist || 'Unknown',
+        album: track.album || 'Unknown',
+        duration: track.length || 0,
+        bpm: track.tempo || undefined,
+        fileHash: track.file_hash || '',
+        filePath: track.file_path,
+        fileSize: track.file_size || 0,
+        bitrate: track.bitrate || undefined,
+      }));
+      db.close();
+
+      return { success: true, tracks };
+    } catch (error) {
+      console.error('Error getting tracks:', error);
+      return {
+        success: false,
+        message:
+          error instanceof Error ? error.message : 'Unknown error occurred',
+        tracks: [],
       };
     }
   });

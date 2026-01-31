@@ -5,15 +5,29 @@ const electronAPI = {
   // FirstTimeSetup methods
   configureMusicLibrary: () => {
     console.log('configureMusicLibrary');
-    return ipcRenderer.invoke('configure-music-library')
+    return ipcRenderer.invoke('configure-music-library');
   },
-  
+
   exposeUserDataPath: () => {
     console.log('exposeUserDataPath');
     return ipcRenderer.invoke('expose-user-data-path');
+  },
+
+  getLibraryConfig: () => {
+    console.log('getLibraryConfig');
+    return ipcRenderer.invoke('get-library-config');
+  },
+
+  getAllTracks: () => {
+    console.log('getAllTracks');
+    return ipcRenderer.invoke('get-all-tracks');
+  },
+
+  scanMusicLibrary: (fullScan: boolean = false) => {
+    console.log('scanMusicLibrary');
+    return ipcRenderer.invoke('scan-music-library', { fullScan });
   },
 };
 
 // Expose the API to the renderer process
 contextBridge.exposeInMainWorld('electronAPI', electronAPI);
-
