@@ -41,12 +41,28 @@ export interface ScanLibraryResponse {
   result?: any;
 }
 
+export interface UpdateTrackRequest {
+  title: string;
+  artist: string;
+  album: string;
+  bpm: number | null;
+}
+
+export interface UpdateTrackResponse {
+  success: boolean;
+  message?: string;
+}
+
 export interface ElectronAPI {
   configureMusicLibrary: () => Promise<IpcResponse>;
   exposeUserDataPath: () => Promise<string>;
   getLibraryConfig: () => Promise<LibraryConfigResponse>;
   getAllTracks: () => Promise<GetAllTracksResponse>;
   scanMusicLibrary: (fullScan?: boolean) => Promise<ScanLibraryResponse>;
+  updateTrack: (
+    trackId: string,
+    updates: UpdateTrackRequest
+  ) => Promise<UpdateTrackResponse>;
 }
 
 declare global {

@@ -187,6 +187,42 @@ class MusicLibraryDB {
     );
   }
 
+  public updateTrack(
+    trackId: string,
+    updates: {
+      title?: string;
+      artist?: string;
+      album?: string;
+      tempo?: number | null;
+    }
+  ): void {
+    const fields: string[] = [];
+    const values: any[] = [];
+
+    if (updates.title !== undefined) {
+      fields.push('title = ?');
+      values.push(updates.title);
+    }
+    if (updates.artist !== undefined) {
+      fields.push('artist = ?');
+      values.push(updates.artist);
+    }
+    if (updates.album !== undefined) {
+      fields.push('album = ?');
+      values.push(updates.album);
+    }
+    if (updates.tempo !== undefined) {
+      fields.push('tempo = ?');
+      values.push(updates.tempo);
+    }
+
+    if (fields.length === 0) return;
+
+    values.push(trackId);
+    const query = `UPDATE tracks SET ${fields.join(', ')} WHERE id = ?`;
+    this.db.prepare(query).run(...values);
+  }
+
   public getTrackByPath(filePath: string): any {
     return this.db
       .prepare('SELECT * FROM tracks WHERE file_path = ?')

@@ -171,6 +171,36 @@ function setupIpcHandlers() {
       };
     }
   });
+
+  ipcMain.handle(
+    'update-track',
+    async (_, data: { trackId: string; updates: any }) => {
+      try {
+        const config = getLibraryConfig();
+        if (!config) {
+          return { success: false, message: 'Library not configured' };
+        }
+
+        const db = new MusicLibraryDB(path.dirname(config.dbPath));
+        db.updateTrack(data.trackId, {
+          title: data.updates.title,
+          artist: data.updates.artist,
+          album: data.updates.album,
+          tempo: data.updates.bpm,
+        });
+        db.close();
+
+        return { success: true, message: 'Track updated successfully' };
+      } catch (error) {
+        console.error('Error updating track:', error);
+        return {
+          success: false,
+          message:
+            error instanceof Error ? error.message : 'Unknown error occurred',
+        };
+      }
+    }
+  );
 }
 
 function getLibraryConfig() {

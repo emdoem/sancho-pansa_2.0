@@ -27,6 +27,11 @@ const electronAPI = {
     console.log('scanMusicLibrary');
     return ipcRenderer.invoke('scan-music-library', { fullScan });
   },
+
+  updateTrack: (trackId: string, updates: any) => {
+    console.log('updateTrack');
+    return ipcRenderer.invoke('update-track', { trackId, updates });
+  },
 };
 
 // Expose the API to the renderer process
