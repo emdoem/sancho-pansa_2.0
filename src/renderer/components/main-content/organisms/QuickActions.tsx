@@ -4,7 +4,10 @@ import SearchIcon from '@mui/icons-material/Search';
 import DriveFileRenameOutlineIcon from '@mui/icons-material/DriveFileRenameOutline';
 import PlaylistAddIcon from '@mui/icons-material/PlaylistAdd';
 import { QuickActionButton } from '../atoms';
-import { handleGetUserDataPath } from '../../../utils/apiHandlers';
+import {
+  handleGetUserDataPath,
+  handleDetectDuplicates,
+} from '../../../utils/apiHandlers';
 
 export const QuickActions = () => (
   <Accordion defaultExpanded>
@@ -17,6 +20,7 @@ export const QuickActions = () => (
           label="Scan for Duplicates"
           icon={<SearchIcon />}
           color="primary"
+          onClick={handleDetectDuplicates}
         />
         <QuickActionButton
           label="Rename Files"

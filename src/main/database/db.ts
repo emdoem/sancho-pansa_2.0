@@ -235,6 +235,61 @@ class MusicLibraryDB {
       .all();
   }
 
+  public detectDuplicates(): {
+    totalTracks: number;
+    uniqueTracks: number;
+    duplicates: Array<{
+      title: string;
+      artist: string;
+      album: string;
+      count: number;
+      trackIds: string[];
+    }>;
+  } {
+    const totalTracks = this.db
+      .prepare('SELECT COUNT(*) as count FROM tracks')
+      .get() as { count: number };
+
+    const duplicates = this.db
+      .prepare(
+        `
+        SELECT
+          title,
+          artist,
+          album,
+          COUNT(*) as count,
+          GROUP_CONCAT(id, ',') as track_ids
+        FROM tracks
+        WHERE title IS NOT NULL OR artist IS NOT NULL OR album IS NOT NULL
+        GROUP BY LOWER(title), LOWER(artist), LOWER(album)
+        HAVING count > 1
+        ORDER BY count DESC
+      `
+      )
+      .all() as Array<{
+      title: string | null;
+      artist: string | null;
+      album: string | null;
+      count: number;
+      track_ids: string;
+    }>;
+
+    const uniqueTracks =
+      totalTracks.count - duplicates.reduce((sum, d) => sum + d.count - 1, 0);
+
+    return {
+      totalTracks: totalTracks.count,
+      uniqueTracks,
+      duplicates: duplicates.map((d) => ({
+        title: d.title || '',
+        artist: d.artist || '',
+        album: d.album || '',
+        count: d.count,
+        trackIds: d.track_ids.split(','),
+      })),
+    };
+  }
+
   public deleteTrack(trackId: string): void {
     this.db.prepare('DELETE FROM tracks WHERE id = ?').run(trackId);
     this.db.prepare('DELETE FROM device_paths WHERE track_id = ?').run(trackId);

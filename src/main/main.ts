@@ -201,6 +201,28 @@ function setupIpcHandlers() {
       }
     }
   );
+
+  ipcMain.handle('detect-duplicates', async () => {
+    try {
+      const config = getLibraryConfig();
+      if (!config) {
+        return { success: false, message: 'Library not configured' };
+      }
+
+      const db = new MusicLibraryDB(path.dirname(config.dbPath));
+      const result = db.detectDuplicates();
+      db.close();
+
+      return { success: true, result };
+    } catch (error) {
+      console.error('Error detecting duplicates:', error);
+      return {
+        success: false,
+        message:
+          error instanceof Error ? error.message : 'Unknown error occurred',
+      };
+    }
+  });
 }
 
 function getLibraryConfig() {

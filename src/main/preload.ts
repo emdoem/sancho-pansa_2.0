@@ -32,6 +32,11 @@ const electronAPI = {
     console.log('updateTrack');
     return ipcRenderer.invoke('update-track', { trackId, updates });
   },
+
+  detectDuplicates: () => {
+    console.log('detectDuplicates');
+    return ipcRenderer.invoke('detect-duplicates');
+  },
 };
 
 // Expose the API to the renderer process

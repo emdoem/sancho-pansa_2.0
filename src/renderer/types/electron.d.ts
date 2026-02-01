@@ -53,6 +53,24 @@ export interface UpdateTrackResponse {
   message?: string;
 }
 
+export interface DuplicateTrack {
+  title: string;
+  artist: string;
+  album: string;
+  count: number;
+  trackIds: string[];
+}
+
+export interface DetectDuplicatesResponse {
+  success: boolean;
+  message?: string;
+  result?: {
+    totalTracks: number;
+    uniqueTracks: number;
+    duplicates: DuplicateTrack[];
+  };
+}
+
 export interface ElectronAPI {
   configureMusicLibrary: () => Promise<IpcResponse>;
   exposeUserDataPath: () => Promise<string>;
@@ -63,6 +81,7 @@ export interface ElectronAPI {
     trackId: string,
     updates: UpdateTrackRequest
   ) => Promise<UpdateTrackResponse>;
+  detectDuplicates: () => Promise<DetectDuplicatesResponse>;
 }
 
 declare global {
