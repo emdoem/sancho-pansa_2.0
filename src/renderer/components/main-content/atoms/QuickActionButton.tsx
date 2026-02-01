@@ -5,6 +5,7 @@ interface QuickActionButtonProps {
   icon: React.ReactNode;
   onClick?: () => void;
   color?: 'primary' | 'neutral' | 'danger' | 'success' | 'warning';
+  disabled?: boolean;
 }
 
 export const QuickActionButton = ({
@@ -12,12 +13,14 @@ export const QuickActionButton = ({
   icon,
   onClick,
   color = 'neutral',
+  disabled = false,
 }: QuickActionButtonProps) => (
   <Button
     variant="soft"
     color={color}
     startDecorator={icon}
     onClick={onClick}
+    disabled={disabled}
     sx={{ flex: 1, whiteSpace: 'normal', textAlign: 'center' }}
   >
     {label}
