@@ -8,15 +8,22 @@ import { QuickActionButton } from '../atoms';
 import {
   handleGetUserDataPath,
   handleDetectDuplicates,
+  handleGenerateOrganizePlan,
 } from '../../../utils/apiHandlers';
 import { DuplicateResultModal } from '../molecules/DuplicateResultModal';
-import type { DetectDuplicatesResponse } from '../../../types/electron';
+import { OrganizePlanModal } from '../molecules/OrganizePlanModal';
+import type {
+  DetectDuplicatesResponse,
+  OrganizePlan,
+} from '../../../types/electron';
 
 export const QuickActions = () => {
   const [isDuplicateModalOpen, setIsDuplicateModalOpen] = useState(false);
   const [duplicateResult, setDuplicateResult] = useState<
     DetectDuplicatesResponse['result'] | null
   >(null);
+  const [isOrganizeModalOpen, setIsOrganizeModalOpen] = useState(false);
+  const [organizePlan, setOrganizePlan] = useState<OrganizePlan | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   const onScanDuplicates = async () => {
@@ -30,6 +37,18 @@ export const QuickActions = () => {
     }
   };
 
+  const onGeneratePlan = async () => {
+    setIsLoading(true);
+    const response = await handleGenerateOrganizePlan();
+    setIsLoading(false);
+
+    if (response.success && response.plan) {
+      setOrganizePlan(response.plan);
+      setIsOrganizeModalOpen(true);
+      setIsDuplicateModalOpen(false);
+    }
+  };
+
   return (
     <>
       <Accordion defaultExpanded>
@@ -39,7 +58,7 @@ export const QuickActions = () => {
         <AccordionDetails>
           <Stack direction="row" gap={2}>
             <QuickActionButton
-              label={isLoading ? 'Scanning...' : 'Scan for Duplicates'}
+              label={isLoading ? 'Loading...' : 'Scan for Duplicates'}
               icon={<SearchIcon />}
               color="primary"
               onClick={onScanDuplicates}
@@ -64,6 +83,18 @@ export const QuickActions = () => {
         isOpen={isDuplicateModalOpen}
         onClose={() => setIsDuplicateModalOpen(false)}
         result={duplicateResult}
+        onCleanUp={onGeneratePlan}
+        isLoading={isLoading}
+      />
+
+      <OrganizePlanModal
+        isOpen={isOrganizeModalOpen}
+        onClose={() => setIsOrganizeModalOpen(false)}
+        plan={organizePlan}
+        onApply={() => {
+          console.log('Apply clicked - Implementation pending');
+          setIsOrganizeModalOpen(false);
+        }}
       />
     </>
   );

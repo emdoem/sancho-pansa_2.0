@@ -21,6 +21,7 @@ export interface Track {
   title: string;
   artist: string;
   album: string;
+  trackNo?: number;
   duration: number;
   bpm?: number;
   fileHash: string;
@@ -71,6 +72,30 @@ export interface DetectDuplicatesResponse {
   };
 }
 
+export interface OrganizeAction {
+  type: 'MOVE' | 'DELETE' | 'KEEP';
+  sourcePath: string;
+  targetPath?: string;
+  reason: string;
+  qualityInfo?: string;
+}
+
+export interface OrganizePlan {
+  actions: OrganizeAction[];
+  stats: {
+    toMove: number;
+    toDelete: number;
+    toKeep: number;
+    totalSizeToRecover: number;
+  };
+}
+
+export interface OrganizePlanResponse {
+  success: boolean;
+  message?: string;
+  plan?: OrganizePlan;
+}
+
 export interface ElectronAPI {
   configureMusicLibrary: () => Promise<IpcResponse>;
   exposeUserDataPath: () => Promise<string>;
@@ -82,6 +107,7 @@ export interface ElectronAPI {
     updates: UpdateTrackRequest
   ) => Promise<UpdateTrackResponse>;
   detectDuplicates: () => Promise<DetectDuplicatesResponse>;
+  generateOrganizePlan: () => Promise<OrganizePlanResponse>;
 }
 
 declare global {

@@ -9,3 +9,9 @@ export const handleDetectDuplicates = async () => {
   console.log('detectDuplicates result', result);
   return result;
 };
+
+export const handleGenerateOrganizePlan = async () => {
+  const result = await window.electronAPI.generateOrganizePlan();
+  console.log('generateOrganizePlan result', result);
+  return result;
+};

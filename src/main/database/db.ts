@@ -30,6 +30,12 @@ class MusicLibraryDB {
       .get();
 
     if (tableExists) {
+      // Ensure track_no column exists (migration for existing DBs)
+      try {
+        this.db.prepare('ALTER TABLE tracks ADD COLUMN track_no INTEGER').run();
+      } catch (e) {
+        // Column likely already exists
+      }
       return;
     }
 
@@ -42,6 +48,7 @@ class MusicLibraryDB {
           artist TEXT,
           title TEXT,
           album TEXT,
+          track_no INTEGER,
           tempo INTEGER,
           length INTEGER,
           file_size INTEGER,
@@ -156,6 +163,7 @@ class MusicLibraryDB {
     artist?: string;
     title?: string;
     album?: string;
+    track_no?: number;
     tempo?: number;
     length?: number;
     file_size?: number;
@@ -165,9 +173,9 @@ class MusicLibraryDB {
   }): void {
     const stmt = this.db.prepare(`
       INSERT OR REPLACE INTO tracks (
-        id, file_path, file_hash, artist, title, album, tempo, length,
+        id, file_path, file_hash, artist, title, album, track_no, tempo, length,
         file_size, bitrate, format, last_modified, date_added
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     stmt.run(
@@ -177,6 +185,7 @@ class MusicLibraryDB {
       trackData.artist || null,
       trackData.title || null,
       trackData.album || null,
+      trackData.track_no || null,
       trackData.tempo || null,
       trackData.length || null,
       trackData.file_size || null,

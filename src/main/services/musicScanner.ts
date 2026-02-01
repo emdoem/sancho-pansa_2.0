@@ -51,13 +51,80 @@ export class MusicScanner {
     try {
       const metadata = await mm.parseFile(filePath);
       const stats = await fs.stat(filePath);
+      const fileName = path.basename(filePath, path.extname(filePath));
+      const parentDir = path.dirname(filePath);
+      const grandParentDir = path.dirname(parentDir);
+
+      let artist = metadata.common.artist;
+      let title = metadata.common.title;
+      let album = metadata.common.album;
+      let trackNo = metadata.common.track.no;
+
+      // 1. Try to extract track number from filename (e.g., "01 - Title.mp3")
+      if (!trackNo) {
+        const trackMatch = fileName.match(/^(\d+)/);
+        if (trackMatch) {
+          trackNo = parseInt(trackMatch[1], 10);
+        }
+      }
+
+      // 2. Guess from filename if missing
+      if (!artist || !title) {
+        // Normalize filename: replace underscores with spaces for easier parsing
+        const normalized = fileName.replace(/_/g, ' ');
+        // Split by common separators: " - ", " -", "- " or just "-"
+        const parts = normalized.split(/\s*-\s*/);
+
+        if (parts.length >= 3) {
+          // Likely [TrackNo] - [Artist] - [Title]
+          // If the first part is a number, it's the track number
+          const firstIsNumber = /^\d+$/.test(parts[0].trim());
+          if (firstIsNumber) {
+            if (!artist) artist = parts[1].trim();
+            if (!title) title = parts[2].trim();
+          } else {
+            if (!artist) artist = parts[0].trim();
+            if (!title) title = parts[1].trim();
+          }
+        } else if (parts.length === 2) {
+          // Likely [Artist] - [Title] or [TrackNo] - [Title]
+          const firstIsNumber = /^\d+$/.test(parts[0].trim());
+          if (firstIsNumber) {
+            if (!title) title = parts[1].trim();
+          } else {
+            if (!artist) artist = parts[0].trim();
+            if (!title) title = parts[1].trim();
+          }
+        }
+
+        // Final fallback for title if still missing
+        if (!title) {
+          title = normalized.replace(/^\d+[\s._-]*/, '').trim();
+        }
+      }
+
+      // 3. Guess from Folder Structure if still missing
+      if (!album || album.toLowerCase() === 'unknown') {
+        const folderName = path.basename(parentDir);
+        if (folderName && folderName !== '.' && folderName !== 'Music') {
+          album = folderName;
+        }
+      }
+
+      if (!artist || artist.toLowerCase() === 'unknown') {
+        const folderName = path.basename(grandParentDir);
+        if (folderName && folderName !== '.' && folderName !== 'Music') {
+          artist = folderName;
+        }
+      }
 
       return {
         file_path: filePath,
         file_hash: await this.calculateFileHash(filePath),
-        artist: metadata.common.artist || undefined,
-        title: metadata.common.title || undefined,
-        album: metadata.common.album || undefined,
+        artist: artist || undefined,
+        title: title || undefined,
+        album: album || undefined,
+        track_no: trackNo || undefined,
         tempo: metadata.common.bpm
           ? Math.round(metadata.common.bpm)
           : undefined,
@@ -111,7 +178,10 @@ export class MusicScanner {
     return musicFiles;
   }
 
-  public async scanLibrary(libraryPath: string): Promise<ScanProgress> {
+  public async scanLibrary(
+    libraryPath: string,
+    forceRefresh: boolean = false
+  ): Promise<ScanProgress> {
     const progress: ScanProgress = {
       totalFiles: 0,
       processedFiles: 0,
@@ -137,7 +207,11 @@ export class MusicScanner {
           const existingTrack = this.db.getTrackByPath(filePath);
           const stats = await fs.stat(filePath);
 
-          if (existingTrack && existingTrack.last_modified === stats.mtimeMs) {
+          if (
+            !forceRefresh &&
+            existingTrack &&
+            existingTrack.last_modified === stats.mtimeMs
+          ) {
             console.log(`Skipping unchanged file: ${filePath}`);
             continue;
           }

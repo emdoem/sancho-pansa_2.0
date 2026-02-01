@@ -1,3 +1,4 @@
+import { useState, useMemo } from 'react';
 import {
   Modal,
   ModalDialog,
@@ -11,20 +12,42 @@ import {
   List,
   ListItem,
   ListItemContent,
+  Input,
 } from '@mui/joy';
+import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
+import SearchIcon from '@mui/icons-material/Search';
 import type { DetectDuplicatesResponse } from '../../../types/electron';
 
 interface DuplicateResultModalProps {
   isOpen: boolean;
   onClose: () => void;
   result: DetectDuplicatesResponse['result'] | null;
+  onCleanUp: () => void;
+  isLoading?: boolean;
 }
 
 export const DuplicateResultModal = ({
   isOpen,
   onClose,
   result,
+  onCleanUp,
+  isLoading = false,
 }: DuplicateResultModalProps) => {
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const filteredDuplicates = useMemo(() => {
+    if (!result) return [];
+    if (!searchQuery.trim()) return result.duplicates;
+
+    const query = searchQuery.toLowerCase();
+    return result.duplicates.filter(
+      (group) =>
+        group.title?.toLowerCase().includes(query) ||
+        group.artist?.toLowerCase().includes(query) ||
+        group.album?.toLowerCase().includes(query)
+    );
+  }, [result, searchQuery]);
+
   if (!result) return null;
 
   return (
@@ -54,12 +77,21 @@ export const DuplicateResultModal = ({
 
             <Divider />
 
+            <Input
+              size="sm"
+              placeholder="Search by title, artist, or album..."
+              startDecorator={<SearchIcon />}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              sx={{ mb: 1 }}
+            />
+
             <Typography level="title-md">
-              Duplicate Groups ({result.duplicates.length})
+              Duplicate Groups ({filteredDuplicates.length})
             </Typography>
 
             <List sx={{ '--ListItem-paddingY': '1rem' }}>
-              {result.duplicates.map((group, index) => (
+              {filteredDuplicates.map((group, index) => (
                 <ListItem
                   key={index}
                   variant="outlined"
@@ -85,15 +117,24 @@ export const DuplicateResultModal = ({
               ))}
             </List>
 
-            {result.duplicates.length === 0 && (
-              <Typography color="success" textAlign="center" sx={{ py: 2 }}>
-                No duplicates found!
+            {filteredDuplicates.length === 0 && (
+              <Typography color="neutral" textAlign="center" sx={{ py: 2 }}>
+                {searchQuery ? 'No matches found.' : 'No duplicates found!'}
               </Typography>
             )}
           </Stack>
         </DialogContent>
         <DialogActions>
-          <Button variant="solid" color="primary" onClick={onClose}>
+          <Button
+            variant="solid"
+            color="success"
+            startDecorator={<AutoFixHighIcon />}
+            onClick={onCleanUp}
+            loading={isLoading}
+          >
+            Clean up and Organize
+          </Button>
+          <Button variant="plain" color="neutral" onClick={onClose}>
             Close
           </Button>
         </DialogActions>

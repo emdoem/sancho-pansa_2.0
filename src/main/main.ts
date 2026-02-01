@@ -4,6 +4,7 @@ import fs from 'fs';
 import FirstTimeSetup from './first-time-setup';
 import MusicLibraryDB from './database/db';
 import { MusicScanner } from './services/musicScanner';
+import { LibraryOrganizer } from './services/libraryOrganizer';
 
 function createWindow() {
   const preloadPath = path.join(__dirname, 'preload.js');
@@ -75,7 +76,7 @@ function setupIpcHandlers() {
 
         let result;
         if (options.fullScan) {
-          result = await scanner.scanLibrary(config.musicRootPath);
+          result = await scanner.scanLibrary(config.musicRootPath, true);
         } else {
           result = await scanner.incrementalScan(config.musicRootPath);
         }
@@ -151,6 +152,7 @@ function setupIpcHandlers() {
         title: track.title || 'Unknown',
         artist: track.artist || 'Unknown',
         album: track.album || 'Unknown',
+        trackNo: track.track_no,
         duration: track.length || 0,
         bpm: track.tempo || undefined,
         fileHash: track.file_hash || '',
@@ -216,6 +218,29 @@ function setupIpcHandlers() {
       return { success: true, result };
     } catch (error) {
       console.error('Error detecting duplicates:', error);
+      return {
+        success: false,
+        message:
+          error instanceof Error ? error.message : 'Unknown error occurred',
+      };
+    }
+  });
+
+  ipcMain.handle('generate-organize-plan', async () => {
+    try {
+      const config = getLibraryConfig();
+      if (!config) {
+        return { success: false, message: 'Library not configured' };
+      }
+
+      const db = new MusicLibraryDB(path.dirname(config.dbPath));
+      const organizer = new LibraryOrganizer(db);
+      const plan = await organizer.generatePlan(config.musicRootPath);
+      db.close();
+
+      return { success: true, plan };
+    } catch (error) {
+      console.error('Error generating organize plan:', error);
       return {
         success: false,
         message:

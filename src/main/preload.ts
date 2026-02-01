@@ -37,6 +37,11 @@ const electronAPI = {
     console.log('detectDuplicates');
     return ipcRenderer.invoke('detect-duplicates');
   },
+
+  generateOrganizePlan: () => {
+    console.log('generateOrganizePlan');
+    return ipcRenderer.invoke('generate-organize-plan');
+  },
 };
 
 // Expose the API to the renderer process
