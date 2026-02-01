@@ -1,4 +1,4 @@
-import { Button, Stack, Typography, Divider } from '@mui/joy';
+import { Stack, Divider } from '@mui/joy';
 import LibraryMusicIcon from '@mui/icons-material/LibraryMusic';
 import QueueMusicIcon from '@mui/icons-material/QueueMusic';
 import PersonIcon from '@mui/icons-material/Person';
@@ -7,6 +7,7 @@ import PlaylistPlayIcon from '@mui/icons-material/PlaylistPlay';
 import FileCopyIcon from '@mui/icons-material/FileCopy';
 import SettingsIcon from '@mui/icons-material/Settings';
 import BarChartIcon from '@mui/icons-material/BarChart';
+import { NavigationSection } from './molecules/NavigationSection';
 
 export const LeftSidebar = () => {
   return (
@@ -21,96 +22,40 @@ export const LeftSidebar = () => {
         padding: 2,
       }}
     >
-      <Typography level="title-lg" sx={{ mb: 2, fontWeight: 600 }}>
-        Library
-      </Typography>
-
-      <Stack direction="column" gap={0.5} sx={{ mb: 3 }}>
-        <Button
-          variant="soft"
-          color="primary"
-          startDecorator={<LibraryMusicIcon />}
-          sx={{ justifyContent: 'flex-start' }}
-        >
-          All Tracks
-        </Button>
-        <Button
-          variant="soft"
-          color="neutral"
-          startDecorator={<PersonIcon />}
-          sx={{ justifyContent: 'flex-start' }}
-        >
-          Artists
-        </Button>
-        <Button
-          variant="soft"
-          color="neutral"
-          startDecorator={<AlbumIcon />}
-          sx={{ justifyContent: 'flex-start' }}
-        >
-          Albums
-        </Button>
-        <Button
-          variant="soft"
-          color="neutral"
-          startDecorator={<PlaylistPlayIcon />}
-          sx={{ justifyContent: 'flex-start' }}
-        >
-          Playlists
-        </Button>
-      </Stack>
+      <NavigationSection
+        title="Library"
+        buttons={[
+          { icon: <LibraryMusicIcon />, label: 'All Tracks', color: 'primary' },
+          { icon: <PersonIcon />, label: 'Artists' },
+          { icon: <AlbumIcon />, label: 'Albums' },
+          { icon: <PlaylistPlayIcon />, label: 'Playlists' },
+        ]}
+      />
 
       <Divider sx={{ mb: 3 }} />
 
-      <Typography level="title-md" sx={{ mb: 2, fontWeight: 600 }}>
-        Tools
-      </Typography>
-
-      <Stack direction="column" gap={0.5} sx={{ mb: 3 }}>
-        <Button
-          variant="soft"
-          color="neutral"
-          startDecorator={<FileCopyIcon />}
-          sx={{ justifyContent: 'flex-start' }}
-        >
-          Duplicates
-        </Button>
-        <Button
-          variant="soft"
-          color="neutral"
-          startDecorator={<QueueMusicIcon />}
-          sx={{ justifyContent: 'flex-start' }}
-        >
-          Import Playlist
-        </Button>
-      </Stack>
+      <NavigationSection
+        title="Tools"
+        level="title-md"
+        buttons={[
+          { icon: <FileCopyIcon />, label: 'Duplicates' },
+          { icon: <QueueMusicIcon />, label: 'Import Playlist' },
+        ]}
+      />
 
       <Divider sx={{ mb: 3 }} />
 
-      <Typography level="title-md" sx={{ mb: 2, fontWeight: 600 }}>
-        Statistics
-      </Typography>
-
-      <Stack direction="column" gap={0.5} sx={{ mb: 3 }}>
-        <Button
-          variant="soft"
-          color="neutral"
-          startDecorator={<BarChartIcon />}
-          sx={{ justifyContent: 'flex-start' }}
-        >
-          Library Stats
-        </Button>
-      </Stack>
+      <NavigationSection
+        title="Statistics"
+        level="title-md"
+        buttons={[{ icon: <BarChartIcon />, label: 'Library Stats' }]}
+      />
 
       <Stack sx={{ mt: 'auto' }}>
-        <Button
-          variant="soft"
-          color="neutral"
-          startDecorator={<SettingsIcon />}
-          sx={{ justifyContent: 'flex-start' }}
-        >
-          Settings
-        </Button>
+        <NavigationSection
+          title=""
+          buttons={[{ icon: <SettingsIcon />, label: 'Settings' }]}
+        />
       </Stack>
     </Stack>
   );

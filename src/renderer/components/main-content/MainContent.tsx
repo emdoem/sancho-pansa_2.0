@@ -1,36 +1,9 @@
-import { handleGetUserDataPath } from '../../utils/apiHandlers';
-import {
-  Button,
-  Stack,
-  Typography,
-  Alert,
-  Box,
-  Input,
-  AccordionGroup,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
-  IconButton,
-  CircularProgress,
-  Modal,
-  ModalDialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  FormLabel,
-  FormControl,
-} from '@mui/joy';
-import { useState, useEffect, useRef } from 'react';
+import { Stack, Typography, AccordionGroup } from '@mui/joy';
+import { useState, useEffect } from 'react';
 import type { Track } from '../../types/electron';
-import { useVirtualizer } from '@tanstack/react-virtual';
-import FolderIcon from '@mui/icons-material/Folder';
-import SearchIcon from '@mui/icons-material/Search';
-import DriveFileRenameOutlineIcon from '@mui/icons-material/DriveFileRenameOutline';
-import PlaylistAddIcon from '@mui/icons-material/PlaylistAdd';
-import RefreshIcon from '@mui/icons-material/Refresh';
-import MusicNoteIcon from '@mui/icons-material/MusicNote';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import EditIcon from '@mui/icons-material/Edit';
+import { ConfigMessage } from './atoms';
+import { TrackEditModal } from './molecules';
+import { LibraryInfo, QuickActions, TrackListing } from './organisms';
 
 export const MainContent = () => {
   const [isConfiguring, setIsConfiguring] = useState(false);
@@ -213,33 +186,32 @@ export const MainContent = () => {
     setSelectedTrack(null);
   };
 
-  const getFileName = (filePath: string) => {
-    return filePath.split(/[\\/]/).pop();
+  const getFileName = (filePath: string): string => {
+    return filePath.split(/[\\/]/).pop() || '';
   };
 
   const filteredTracks = tracks
     ? tracks.filter(
-      (track) =>
-        track.title
-          .toLowerCase()
-          .includes(debouncedSearchQuery.toLowerCase()) ||
-        track.artist
-          .toLowerCase()
-          .includes(debouncedSearchQuery.toLowerCase()) ||
-        track.album.toLowerCase().includes(debouncedSearchQuery.toLowerCase())
-    )
+        (track) =>
+          track.title
+            .toLowerCase()
+            .includes(debouncedSearchQuery.toLowerCase()) ||
+          track.artist
+            .toLowerCase()
+            .includes(debouncedSearchQuery.toLowerCase()) ||
+          track.album.toLowerCase().includes(debouncedSearchQuery.toLowerCase())
+      )
     : [];
 
-  const parentRef = useRef<HTMLDivElement>(null);
+  const totalSize = filteredTracks.reduce(
+    (acc, track) => acc + track.fileSize,
+    0
+  );
 
-  const rowVirtualizer = useVirtualizer({
-    count: filteredTracks.length,
-    getScrollElement: () => parentRef.current,
-    estimateSize: () => 52,
-    overscan: 10,
-  });
-
-  const items = rowVirtualizer.getVirtualItems();
+  const totalDuration = filteredTracks.reduce(
+    (acc, track) => acc + track.duration,
+    0
+  );
 
   return (
     <Stack
@@ -266,13 +238,7 @@ export const MainContent = () => {
         </Typography>
 
         {configMessage && (
-          <Alert
-            color={configMessage.type === 'success' ? 'success' : 'danger'}
-            sx={{ mb: 3 }}
-            variant="soft"
-          >
-            {configMessage.text}
-          </Alert>
+          <ConfigMessage type={configMessage.type} text={configMessage.text} />
         )}
 
         <Stack direction="column" gap={3}>
@@ -286,553 +252,41 @@ export const MainContent = () => {
               },
             }}
           >
-            <Accordion defaultExpanded>
-              <AccordionSummary indicator={<ExpandMoreIcon />}>
-                <Typography level="title-lg" sx={{ fontWeight: 600 }}>
-                  Library Info
-                </Typography>
-              </AccordionSummary>
-              <AccordionDetails>
-                {!isLibraryConfigured ? (
-                  <Stack direction="column" gap={2}>
-                    <Typography level="body-md" sx={{ fontWeight: 500 }}>
-                      Library not configured
-                    </Typography>
-                    <Button
-                      variant="solid"
-                      color="primary"
-                      startDecorator={<FolderIcon />}
-                      onClick={handleConfigureMusicLibrary}
-                      loading={isConfiguring}
-                      disabled={isConfiguring}
-                      sx={{ alignSelf: 'flex-start' }}
-                    >
-                      {isConfiguring
-                        ? 'Configuring...'
-                        : 'Configure Music Library'}
-                    </Button>
-                  </Stack>
-                ) : (
-                  <Stack direction="column" gap={2}>
-                    <Stack direction="row" gap={3} flexWrap="wrap">
-                      <Stack direction="column" sx={{ flex: '1 1 200px' }}>
-                        <Typography
-                          level="body-sm"
-                          sx={{ color: 'text.tertiary', mb: 0.5 }}
-                        >
-                          Library Path
-                        </Typography>
-                        <Typography level="body-md" sx={{ fontWeight: 500 }}>
-                          Configured
-                        </Typography>
-                      </Stack>
-                      <Stack direction="column" sx={{ flex: '1 1 150px' }}>
-                        <Typography
-                          level="body-sm"
-                          sx={{ color: 'text.tertiary', mb: 0.5 }}
-                        >
-                          Tracks
-                        </Typography>
-                        <Typography level="body-md" sx={{ fontWeight: 500 }}>
-                          {filteredTracks.length}
-                        </Typography>
-                      </Stack>
-                      <Stack direction="column" sx={{ flex: '1 1 150px' }}>
-                        <Typography
-                          level="body-sm"
-                          sx={{ color: 'text.tertiary', mb: 0.5 }}
-                        >
-                          Total Size
-                        </Typography>
-                        <Typography level="body-md" sx={{ fontWeight: 500 }}>
-                          {formatFileSize(
-                            filteredTracks.reduce(
-                              (acc, track) => acc + track.fileSize,
-                              0
-                            )
-                          )}
-                        </Typography>
-                      </Stack>
-                      <Stack direction="column" sx={{ flex: '1 1 150px' }}>
-                        <Typography
-                          level="body-sm"
-                          sx={{ color: 'text.tertiary', mb: 0.5 }}
-                        >
-                          Total Duration
-                        </Typography>
-                        <Typography level="body-md" sx={{ fontWeight: 500 }}>
-                          {formatDuration(
-                            filteredTracks.reduce(
-                              (acc, track) => acc + track.duration,
-                              0
-                            )
-                          )}
-                        </Typography>
-                      </Stack>
-                    </Stack>
-                    <Button
-                      variant="soft"
-                      color="primary"
-                      startDecorator={<RefreshIcon />}
-                      onClick={handleRescanLibrary}
-                      loading={isScanning}
-                      disabled={isScanning}
-                      sx={{ alignSelf: 'flex-start' }}
-                    >
-                      {isScanning ? 'Scanning...' : 'Rescan Music Library'}
-                    </Button>
-                  </Stack>
-                )}
-              </AccordionDetails>
-            </Accordion>
+            <LibraryInfo
+              isLibraryConfigured={isLibraryConfigured}
+              trackCount={filteredTracks.length}
+              totalSize={formatFileSize(totalSize)}
+              totalDuration={formatDuration(totalDuration)}
+              onConfigure={handleConfigureMusicLibrary}
+              isConfiguring={isConfiguring}
+              onRescan={handleRescanLibrary}
+              isScanning={isScanning}
+            />
 
-            <Accordion defaultExpanded>
-              <AccordionSummary indicator={<ExpandMoreIcon />}>
-                <Typography level="title-lg" sx={{ fontWeight: 600 }}>
-                  Quick Actions
-                </Typography>
-              </AccordionSummary>
-              <AccordionDetails>
-                <Stack direction="row" gap={2}>
-                  <Button
-                    variant="soft"
-                    color="primary"
-                    startDecorator={<SearchIcon />}
-                    sx={{ flex: 1, whiteSpace: 'normal', textAlign: 'center' }}
-                  >
-                    Scan for Duplicates
-                  </Button>
-                  <Button
-                    variant="soft"
-                    color="neutral"
-                    startDecorator={<DriveFileRenameOutlineIcon />}
-                    sx={{ flex: 1, whiteSpace: 'normal', textAlign: 'center' }}
-                  >
-                    Rename Files
-                  </Button>
-                  <Button
-                    variant="soft"
-                    color="neutral"
-                    startDecorator={<PlaylistAddIcon />}
-                    onClick={handleGetUserDataPath}
-                    sx={{ flex: 1, whiteSpace: 'normal', textAlign: 'center' }}
-                  >
-                    Import Playlist
-                  </Button>
-                </Stack>
-              </AccordionDetails>
-            </Accordion>
+            <QuickActions />
           </AccordionGroup>
 
-          <Box
-            sx={{
-              backgroundColor: 'background.level1',
-              border: '1px solid',
-              borderColor: 'divider',
-              borderRadius: 2,
-              padding: 3,
-            }}
-          >
-            <Stack
-              direction="row"
-              justifyContent="space-between"
-              alignItems="center"
-              sx={{ mb: 2 }}
-            >
-              <Typography level="title-lg" sx={{ fontWeight: 600 }}>
-                Track Listing ({filteredTracks.length})
-              </Typography>
-              <Input
-                placeholder="Search tracks..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                startDecorator={<SearchIcon />}
-                sx={{ width: 300 }}
-              />
-            </Stack>
-
-            {tracks === null || isLoadingTracks ? (
-              <Stack
-                direction="column"
-                alignItems="center"
-                justifyContent="center"
-                sx={{ height: '100%', minHeight: 200 }}
-              >
-                <CircularProgress size="lg" />
-                <Typography
-                  level="body-md"
-                  sx={{ color: 'text.secondary', mt: 2 }}
-                >
-                  Loading tracks...
-                </Typography>
-              </Stack>
-            ) : filteredTracks.length === 0 ? (
-              <Stack
-                direction="column"
-                alignItems="center"
-                justifyContent="center"
-                sx={{ height: '100%', minHeight: 200 }}
-              >
-                <MusicNoteIcon
-                  sx={{ fontSize: 64, color: 'text.tertiary', mb: 2 }}
-                />
-                <Typography
-                  level="body-lg"
-                  sx={{ color: 'text.secondary', textAlign: 'center' }}
-                >
-                  {searchQuery ? 'No tracks found' : 'No tracks loaded yet'}
-                </Typography>
-                <Typography
-                  level="body-sm"
-                  sx={{ color: 'text.tertiary', textAlign: 'center', mt: 1 }}
-                >
-                  {searchQuery
-                    ? 'Try a different search term'
-                    : 'Configure your music library to start scanning for tracks'}
-                </Typography>
-              </Stack>
-            ) : (
-              <Box
-                sx={{
-                  border: '1px solid',
-                  borderColor: 'divider',
-                  borderRadius: 2,
-                  overflow: 'hidden',
-                  height: '650px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                }}
-              >
-                <Box
-                  sx={{
-                    display: 'flex',
-                    width: '100%',
-                    borderBottom: '1px solid',
-                    borderColor: 'divider',
-                    backgroundColor: 'background.level2',
-                  }}
-                >
-                  <Box
-                    sx={{
-                      flex: '0 0 25%',
-                      padding: '12px',
-                      fontWeight: 600,
-                      color: 'text.primary',
-                    }}
-                  >
-                    Title
-                  </Box>
-                  <Box
-                    sx={{
-                      flex: '0 0 15%',
-                      padding: '12px',
-                      fontWeight: 600,
-                      color: 'text.primary',
-                    }}
-                  >
-                    Artist
-                  </Box>
-                  <Box
-                    sx={{
-                      flex: '0 0 15%',
-                      padding: '12px',
-                      fontWeight: 600,
-                      color: 'text.primary',
-                    }}
-                  >
-                    Album
-                  </Box>
-                  <Box
-                    sx={{
-                      flex: '0 0 20%',
-                      padding: '12px',
-                      fontWeight: 600,
-                      color: 'text.primary',
-                    }}
-                  >
-                    File Name
-                  </Box>
-                  <Box
-                    sx={{
-                      flex: '0 0 5%',
-                      padding: '12px',
-                      fontWeight: 600,
-                      color: 'text.primary',
-                      textAlign: 'center',
-                    }}
-                  >
-                    BPM
-                  </Box>
-                  <Box
-                    sx={{
-                      flex: '0 0 8%',
-                      padding: '12px',
-                      fontWeight: 600,
-                      color: 'text.primary',
-                      textAlign: 'right',
-                    }}
-                  >
-                    Duration
-                  </Box>
-                  <Box
-                    sx={{
-                      flex: '0 0 7%',
-                      padding: '12px',
-                      fontWeight: 600,
-                      color: 'text.primary',
-                      textAlign: 'right',
-                    }}
-                  >
-                    Size
-                  </Box>
-                  <Box
-                    sx={{
-                      flex: '0 0 5%',
-                      padding: '12px',
-                      fontWeight: 600,
-                      color: 'text.primary',
-                      textAlign: 'center',
-                    }}
-                  >
-                    Actions
-                  </Box>
-                </Box>
-                <Box
-                  ref={parentRef}
-                  sx={{
-                    height: '600px',
-                    overflow: 'auto',
-                  }}
-                >
-                  <Box
-                    sx={{
-                      height: `${rowVirtualizer.getTotalSize()}px`,
-                      width: '100%',
-                      position: 'relative',
-                    }}
-                  >
-                    {items.map((virtualRow) => (
-                      <Box
-                        key={virtualRow.key}
-                        sx={{
-                          position: 'absolute',
-                          top: 0,
-                          left: 0,
-                          width: '100%',
-                          height: `${virtualRow.size}px`,
-                          transform: 'translateY(' + virtualRow.start + 'px)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          '&:hover': {
-                            backgroundColor: 'rgba(76, 175, 80, 0.08)',
-                          },
-                        }}
-                      >
-                        <Box
-                          sx={{
-                            flex: '0 0 25%',
-                            padding: '12px',
-                            borderBottom: '1px solid',
-                            borderColor: 'divider',
-                            overflow: 'hidden',
-                          }}
-                        >
-                          <Typography
-                            level="body-md"
-                            sx={{ fontWeight: 500 }}
-                          >
-                            {filteredTracks[virtualRow.index].title}
-                          </Typography>
-                        </Box>
-                        <Box
-                          sx={{
-                            flex: '0 0 15%',
-                            padding: '12px',
-                            borderBottom: '1px solid',
-                            borderColor: 'divider',
-                            overflow: 'hidden',
-                          }}
-                        >
-                          <Typography
-                            level="body-sm"
-                            sx={{ color: 'text.secondary' }}
-                          >
-                            {filteredTracks[virtualRow.index].artist}
-                          </Typography>
-                        </Box>
-                        <Box
-                          sx={{
-                            flex: '0 0 15%',
-                            padding: '12px',
-                            borderBottom: '1px solid',
-                            borderColor: 'divider',
-                            overflow: 'hidden',
-                          }}
-                        >
-                          <Typography
-                            level="body-sm"
-                            sx={{ color: 'text.secondary' }}
-                          >
-                            {filteredTracks[virtualRow.index].album}
-                          </Typography>
-                        </Box>
-                        <Box
-                          sx={{
-                            flex: '0 0 20%',
-                            padding: '12px',
-                            borderBottom: '1px solid',
-                            borderColor: 'divider',
-                            overflow: 'hidden',
-                          }}
-                        >
-                          <Typography
-                            level="body-sm"
-                            sx={{ color: 'text.secondary' }}
-                          >
-                            {getFileName(filteredTracks[virtualRow.index].filePath)}
-                          </Typography>
-                        </Box>
-                        <Box
-                          sx={{
-                            flex: '0 0 5%',
-                            padding: '12px',
-                            textAlign: 'center',
-                            borderBottom: '1px solid',
-                            borderColor: 'divider',
-                            overflow: 'hidden',
-                          }}
-                        >
-                          <Typography
-                            level="body-sm"
-                            sx={{ color: 'text.secondary' }}
-                          >
-                            {filteredTracks[virtualRow.index].bpm || '-'}
-                          </Typography>
-                        </Box>
-                        <Box
-                          sx={{
-                            flex: '0 0 8%',
-                            padding: '12px',
-                            textAlign: 'right',
-                            borderBottom: '1px solid',
-                            borderColor: 'divider',
-                            overflow: 'hidden',
-                          }}
-                        >
-                          <Typography
-                            level="body-sm"
-                            sx={{ color: 'text.secondary' }}
-                          >
-                            {formatDuration(
-                              filteredTracks[virtualRow.index].duration
-                            )}
-                          </Typography>
-                        </Box>
-                        <Box
-                          sx={{
-                            flex: '0 0 7%',
-                            padding: '12px',
-                            textAlign: 'right',
-                            borderBottom: '1px solid',
-                            borderColor: 'divider',
-                            overflow: 'hidden',
-                          }}
-                        >
-                          <Typography
-                            level="body-sm"
-                            sx={{ color: 'text.secondary' }}
-                          >
-                            {formatFileSize(
-                              filteredTracks[virtualRow.index].fileSize
-                            )}
-                          </Typography>
-                        </Box>
-                        <Box
-                          sx={{
-                            flex: '0 0 5%',
-                            padding: '12px',
-                            textAlign: 'center',
-                            borderBottom: '1px solid',
-                            borderColor: 'divider',
-                            overflow: 'hidden',
-                          }}
-                        >
-                          <IconButton
-                            size="sm"
-                            onClick={() =>
-                              handleEditTrack(
-                                filteredTracks[virtualRow.index]
-                              )
-                            }
-                          >
-                            <EditIcon />
-                          </IconButton>
-                        </Box>
-                      </Box>
-                    ))}
-                  </Box>
-                </Box>
-              </Box>
-            )}
-          </Box>
+          <TrackListing
+            tracks={tracks}
+            isLoading={isLoadingTracks}
+            searchQuery={searchQuery}
+            filteredTracks={filteredTracks}
+            onSearchChange={setSearchQuery}
+            onEditTrack={handleEditTrack}
+            getFileName={getFileName}
+            formatDuration={formatDuration}
+            formatFileSize={formatFileSize}
+          />
         </Stack>
       </Stack>
-      <Modal open={isEditModalOpen} onClose={handleCloseModal}>
-        <ModalDialog sx={{ minWidth: 400 }}>
-          <DialogTitle>Edit Track</DialogTitle>
-          <DialogContent>
-            <Stack direction="column" gap={2}>
-              <FormControl>
-                <FormLabel>Title</FormLabel>
-                <Input
-                  value={editForm.title}
-                  onChange={(e) =>
-                    setEditForm({ ...editForm, title: e.target.value })
-                  }
-                  placeholder="Enter track title"
-                />
-              </FormControl>
-              <FormControl>
-                <FormLabel>Artist</FormLabel>
-                <Input
-                  value={editForm.artist}
-                  onChange={(e) =>
-                    setEditForm({ ...editForm, artist: e.target.value })
-                  }
-                  placeholder="Enter artist name"
-                />
-              </FormControl>
-              <FormControl>
-                <FormLabel>Album</FormLabel>
-                <Input
-                  value={editForm.album}
-                  onChange={(e) =>
-                    setEditForm({ ...editForm, album: e.target.value })
-                  }
-                  placeholder="Enter album name"
-                />
-              </FormControl>
-              <FormControl>
-                <FormLabel>BPM</FormLabel>
-                <Input
-                  type="number"
-                  value={editForm.bpm}
-                  onChange={(e) =>
-                    setEditForm({ ...editForm, bpm: e.target.value })
-                  }
-                  placeholder="Enter BPM"
-                />
-              </FormControl>
-            </Stack>
-          </DialogContent>
-          <DialogActions>
-            <Button variant="plain" color="neutral" onClick={handleCloseModal}>
-              Cancel
-            </Button>
-            <Button onClick={handleSaveTrack}>Save</Button>
-          </DialogActions>
-        </ModalDialog>
-      </Modal>
+
+      <TrackEditModal
+        isOpen={isEditModalOpen}
+        onClose={handleCloseModal}
+        form={editForm}
+        onFormChange={setEditForm}
+        onSave={handleSaveTrack}
+      />
     </Stack>
   );
 };
