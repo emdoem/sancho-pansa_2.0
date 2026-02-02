@@ -1,6 +1,6 @@
 import SyncIcon from '@mui/icons-material/Sync';
 import SettingsIcon from '@mui/icons-material/Settings';
-import { AppHeader } from './molecules/AppHeader';
+import { AppHeader } from '../molecules';
 
 export const TopBar = () => {
   return (

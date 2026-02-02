@@ -12,10 +12,9 @@ import {
   List,
   ListItem,
   ListItemContent,
-  Input,
 } from '@mui/joy';
 import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
-import SearchIcon from '@mui/icons-material/Search';
+import { SearchInput } from '../atoms';
 import type { DetectDuplicatesResponse } from '../../../types/electron';
 
 interface DuplicateResultModalProps {
@@ -77,13 +76,11 @@ export const DuplicateResultModal = ({
 
             <Divider />
 
-            <Input
-              size="sm"
+            <SearchInput
               placeholder="Search by title, artist, or album..."
-              startDecorator={<SearchIcon />}
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              sx={{ mb: 1 }}
+              onChange={setSearchQuery}
+              sx={{ mb: 1, width: '100%' }}
             />
 
             <Typography level="title-md">

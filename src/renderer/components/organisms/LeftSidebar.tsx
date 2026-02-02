@@ -7,7 +7,7 @@ import PlaylistPlayIcon from '@mui/icons-material/PlaylistPlay';
 import FileCopyIcon from '@mui/icons-material/FileCopy';
 import SettingsIcon from '@mui/icons-material/Settings';
 import BarChartIcon from '@mui/icons-material/BarChart';
-import { NavigationSection } from './molecules/NavigationSection';
+import { NavigationSection } from '../molecules';
 
 export const LeftSidebar = () => {
   return (

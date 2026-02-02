@@ -1,5 +1,6 @@
 import { Stack } from '@mui/joy';
-import { TopBar, LeftSidebar, MainContent, BottomBar } from './components';
+import { TopBar, LeftSidebar, BottomBar } from './components/organisms';
+import { MainContent } from './components/templates';
 
 function App() {
   return (

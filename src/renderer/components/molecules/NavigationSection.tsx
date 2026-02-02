@@ -1,6 +1,5 @@
 import { Stack } from '@mui/joy';
-import { SectionTitle } from '../atoms/SectionTitle';
-import { SidebarButton } from '../atoms/SidebarButton';
+import { SectionTitle, SidebarButton } from '../atoms';
 
 interface NavigationSectionProps {
   title: string;

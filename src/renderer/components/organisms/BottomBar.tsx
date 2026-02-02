@@ -1,7 +1,9 @@
 import { Stack } from '@mui/joy';
-import { TrackInfoSection } from './molecules/TrackInfoSection';
-import { PlaybackControls } from './molecules/PlaybackControls';
-import { VolumeControl } from './molecules/VolumeControl';
+import {
+  TrackInfoSection,
+  PlaybackControls,
+  VolumeControl,
+} from '../molecules';
 
 export const BottomBar = () => {
   return (

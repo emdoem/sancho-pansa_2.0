@@ -1,9 +1,9 @@
 import { Stack, Typography, AccordionGroup } from '@mui/joy';
 import { useState, useEffect } from 'react';
 import type { Track } from '../../types/electron';
-import { ConfigMessage } from './atoms';
-import { TrackEditModal } from './molecules';
-import { LibraryInfo, QuickActions, TrackListing } from './organisms';
+import { ConfigMessage } from '../atoms';
+import { TrackEditModal } from '../molecules';
+import { LibraryInfo, QuickActions, TrackListing } from '../organisms';
 
 export const MainContent = () => {
   const [isConfiguring, setIsConfiguring] = useState(false);

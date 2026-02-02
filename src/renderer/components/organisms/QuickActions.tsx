@@ -9,13 +9,12 @@ import {
   handleGetUserDataPath,
   handleDetectDuplicates,
   handleGenerateOrganizePlan,
-} from '../../../utils/apiHandlers';
-import { DuplicateResultModal } from '../molecules/DuplicateResultModal';
-import { OrganizePlanModal } from '../molecules/OrganizePlanModal';
+} from '../../utils/apiHandlers';
+import { DuplicateResultModal, OrganizePlanModal } from '../molecules';
 import type {
   DetectDuplicatesResponse,
   OrganizePlan,
-} from '../../../types/electron';
+} from '../../types/electron';
 
 export const QuickActions = () => {
   const [isDuplicateModalOpen, setIsDuplicateModalOpen] = useState(false);

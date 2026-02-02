@@ -14,9 +14,8 @@ import {
   ListItemContent,
   Chip,
   Box,
-  Input,
 } from '@mui/joy';
-import SearchIcon from '@mui/icons-material/Search';
+import { SearchInput } from '../atoms';
 import type { OrganizePlan } from '../../../types/electron';
 
 interface OrganizePlanModalProps {
@@ -110,12 +109,10 @@ export const OrganizePlanModal = ({
               alignItems="center"
             >
               <Typography level="title-md">Proposed Actions</Typography>
-              <Input
-                size="sm"
+              <SearchInput
                 placeholder="Search paths or reasons..."
-                startDecorator={<SearchIcon />}
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={setSearchQuery}
                 sx={{ width: 300 }}
               />
             </Stack>

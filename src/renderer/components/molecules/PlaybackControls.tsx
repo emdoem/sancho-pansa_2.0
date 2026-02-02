@@ -1,6 +1,5 @@
 import { Stack } from '@mui/joy';
-import { PlaybackButton } from '../atoms/PlaybackButton';
-import { ProgressSlider } from '../atoms/ProgressSlider';
+import { PlaybackButton, ProgressSlider } from '../atoms';
 
 export const PlaybackControls = () => (
   <Stack direction="column" alignItems="center" sx={{ width: '40%' }}>

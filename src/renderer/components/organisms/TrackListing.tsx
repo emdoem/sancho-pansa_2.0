@@ -1,6 +1,7 @@
 import { Box, Stack, Typography } from '@mui/joy';
 import type { Track } from '../../../types/electron';
-import { SearchInput, EmptyState, LoadingState } from '../atoms';
+import { EmptyState, LoadingState } from '../atoms';
+import { SearchInput } from '../atoms';
 import { TrackTable } from '../molecules';
 
 interface TrackListingProps {

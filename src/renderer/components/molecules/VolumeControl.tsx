@@ -1,5 +1,5 @@
 import { Stack } from '@mui/joy';
-import { VolumeSlider } from '../atoms/VolumeSlider';
+import { VolumeSlider } from '../atoms';
 
 export const VolumeControl = () => (
   <Stack

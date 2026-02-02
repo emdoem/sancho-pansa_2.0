@@ -1,6 +1,5 @@
 import { Stack } from '@mui/joy';
-import { AppTitle } from '../atoms/AppTitle';
-import { ActionIconButton } from '../atoms/ActionIconButton';
+import { AppTitle, ActionIconButton } from '../atoms';
 
 interface AppHeaderProps {
   title?: string;
