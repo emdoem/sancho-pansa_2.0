@@ -57,17 +57,23 @@ export class LibraryOrganizer {
     // Track used paths to avoid collisions
     const usedTargetPaths = new Map<string, string>(); // path -> original_file_id
 
-    // 1. Group by semantic identity (Artist + Title + Album)
+    // 1. Group by semantic identity (Artist + Title + Album + TrackNo)
     const semanticGroups = new Map<string, any[]>();
 
     for (const track of tracks) {
+      const albumArtist = (
+        track.album_artist_name ||
+        track.album_artist ||
+        ''
+      ).trim();
       const artist = (track.artist || 'Unknown').trim();
       const title = (track.title || 'Unknown').trim();
-      const album = (track.album || 'Unknown').trim();
+      const album = (track.album_title || track.album || 'Unknown').trim();
+      const trackNo = track.track_no || '';
 
-      // Strict rule: If both Artist and Title are Unknown, treat as unique to avoid massive data loss
+      // Strict rule: If Artist or Title is Unknown, treat as unique unless we have a hash match later
       if (
-        artist.toLowerCase() === 'unknown' &&
+        artist.toLowerCase() === 'unknown' ||
         title.toLowerCase() === 'unknown'
       ) {
         const key = `unique_${track.id}`;
@@ -75,7 +81,10 @@ export class LibraryOrganizer {
         continue;
       }
 
-      const key = `${artist.toLowerCase()}|${title.toLowerCase()}|${album.toLowerCase()}`;
+      // Group by Album Artist (if available) + Title + Album + TrackNo
+      // This helps group tracks with different "feat." artists into the same semantic group
+      const mainArtist = albumArtist || artist;
+      const key = `${mainArtist.toLowerCase()}|${title.toLowerCase()}|${album.toLowerCase()}|${trackNo}`;
       if (!semanticGroups.has(key)) semanticGroups.set(key, []);
       semanticGroups.get(key)!.push(track);
     }
@@ -91,15 +100,18 @@ export class LibraryOrganizer {
       const duplicates = groupTracks.slice(1);
 
       // --- HANDLE KEEPER ---
-      const artist = this.sanitize(keeper.artist);
-      const album = this.sanitize(keeper.album);
+      // Use Album Artist from the normalized table for the folder structure
+      const artistFolder = this.sanitize(
+        keeper.album_artist_name || keeper.album_artist || keeper.artist
+      );
+      const albumFolder = this.sanitize(keeper.album_title || keeper.album);
       const title = this.sanitize(keeper.title);
       const trackNoStr = keeper.track_no
         ? `${keeper.track_no.toString().padStart(2, '0')} - `
         : '';
       const ext = path.extname(keeper.file_path);
 
-      const targetDir = path.join(libraryRoot, artist, album);
+      const targetDir = path.join(libraryRoot, artistFolder, albumFolder);
       let targetFileName = `${trackNoStr}${title}${ext}`;
       let targetPath = path.join(targetDir, targetFileName);
 

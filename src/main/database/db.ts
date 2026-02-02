@@ -1,5 +1,6 @@
 import Database from 'better-sqlite3';
 import path from 'path';
+import crypto from 'crypto';
 
 class MusicLibraryDB {
   private db: Database.Database;
@@ -30,12 +31,38 @@ class MusicLibraryDB {
       .get();
 
     if (tableExists) {
-      // Ensure track_no column exists (migration for existing DBs)
+      // Ensure track_no and album_artist columns exist (migration for existing DBs)
       try {
         this.db.prepare('ALTER TABLE tracks ADD COLUMN track_no INTEGER').run();
       } catch (e) {
         // Column likely already exists
       }
+      try {
+        this.db
+          .prepare('ALTER TABLE tracks ADD COLUMN album_artist TEXT')
+          .run();
+      } catch (e) {
+        // Column likely already exists
+      }
+      try {
+        this.db.prepare('ALTER TABLE tracks ADD COLUMN album_id TEXT').run();
+      } catch (e) {
+        // Column likely already exists
+      }
+
+      this.db.exec(`
+        CREATE TABLE IF NOT EXISTS artists (
+            id TEXT PRIMARY KEY,
+            name TEXT UNIQUE NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS albums (
+            id TEXT PRIMARY KEY,
+            title TEXT NOT NULL,
+            artist_id TEXT,
+            FOREIGN KEY (artist_id) REFERENCES artists(id),
+            UNIQUE(title, artist_id)
+        );
+      `);
       return;
     }
 
@@ -46,6 +73,7 @@ class MusicLibraryDB {
           file_path TEXT NOT NULL,
           file_hash TEXT,
           artist TEXT,
+          album_artist TEXT,
           title TEXT,
           album TEXT,
           track_no INTEGER,
@@ -95,6 +123,23 @@ class MusicLibraryDB {
           value TEXT,
           updated_at INTEGER
       );
+
+      -- Normalized Catalog
+      CREATE TABLE artists (
+          id TEXT PRIMARY KEY,
+          name TEXT UNIQUE NOT NULL
+      );
+
+      CREATE TABLE albums (
+          id TEXT PRIMARY KEY,
+          title TEXT NOT NULL,
+          artist_id TEXT,
+          FOREIGN KEY (artist_id) REFERENCES artists(id),
+          UNIQUE(title, artist_id)
+      );
+
+      -- Update tracks table to link to album
+      ALTER TABLE tracks ADD COLUMN album_id TEXT;
 
       -- Operation log for sync conflict resolution
       CREATE TABLE operation_log (
@@ -161,6 +206,8 @@ class MusicLibraryDB {
     file_path: string;
     file_hash?: string;
     artist?: string;
+    album_artist?: string;
+    album_id?: string;
     title?: string;
     album?: string;
     track_no?: number;
@@ -173,9 +220,9 @@ class MusicLibraryDB {
   }): void {
     const stmt = this.db.prepare(`
       INSERT OR REPLACE INTO tracks (
-        id, file_path, file_hash, artist, title, album, track_no, tempo, length,
+        id, file_path, file_hash, artist, album_artist, album_id, title, album, track_no, tempo, length,
         file_size, bitrate, format, last_modified, date_added
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     stmt.run(
@@ -183,6 +230,8 @@ class MusicLibraryDB {
       trackData.file_path,
       trackData.file_hash || null,
       trackData.artist || null,
+      trackData.album_artist || null,
+      trackData.album_id || null,
       trackData.title || null,
       trackData.album || null,
       trackData.track_no || null,
@@ -240,7 +289,18 @@ class MusicLibraryDB {
 
   public getAllTracks(): any[] {
     return this.db
-      .prepare('SELECT * FROM tracks ORDER BY artist, album, title')
+      .prepare(
+        `
+        SELECT 
+          t.*, 
+          a.title as album_title, 
+          art.name as album_artist_name
+        FROM tracks t
+        LEFT JOIN albums a ON t.album_id = a.id
+        LEFT JOIN artists art ON a.artist_id = art.id
+        ORDER BY t.artist, t.album, t.title
+      `
+      )
       .all();
   }
 
@@ -264,13 +324,13 @@ class MusicLibraryDB {
         `
         SELECT
           title,
-          artist,
+          COALESCE(album_artist, artist) as artist,
           album,
           COUNT(*) as count,
           GROUP_CONCAT(id, ',') as track_ids
         FROM tracks
         WHERE title IS NOT NULL OR artist IS NOT NULL OR album IS NOT NULL
-        GROUP BY LOWER(title), LOWER(artist), LOWER(album)
+        GROUP BY LOWER(title), LOWER(COALESCE(album_artist, artist)), LOWER(album)
         HAVING count > 1
         ORDER BY count DESC
       `
@@ -297,6 +357,30 @@ class MusicLibraryDB {
         trackIds: d.track_ids.split(','),
       })),
     };
+  }
+
+  public getOrCreateArtist(name: string): string {
+    const existing = this.db
+      .prepare('SELECT id FROM artists WHERE name = ?')
+      .get(name) as { id: string } | undefined;
+    if (existing) return existing.id;
+    const id = crypto.randomUUID();
+    this.db
+      .prepare('INSERT INTO artists (id, name) VALUES (?, ?)')
+      .run(id, name);
+    return id;
+  }
+
+  public getOrCreateAlbum(title: string, artistId: string): string {
+    const existing = this.db
+      .prepare('SELECT id FROM albums WHERE title = ? AND artist_id = ?')
+      .get(title, artistId) as { id: string } | undefined;
+    if (existing) return existing.id;
+    const id = crypto.randomUUID();
+    this.db
+      .prepare('INSERT INTO albums (id, title, artist_id) VALUES (?, ?, ?)')
+      .run(id, title, artistId);
+    return id;
   }
 
   public deleteTrack(trackId: string): void {

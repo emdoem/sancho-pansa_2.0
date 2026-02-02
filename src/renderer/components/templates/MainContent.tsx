@@ -98,7 +98,8 @@ export const MainContent = () => {
     setConfigMessage(null);
 
     try {
-      const result = await window.electronAPI.scanMusicLibrary(false);
+      // Pass true for full scan to force refresh metadata with new parsing logic
+      const result = await window.electronAPI.scanMusicLibrary(true);
 
       if (result.success) {
         setConfigMessage({

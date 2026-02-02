@@ -151,7 +151,8 @@ function setupIpcHandlers() {
         id: track.id,
         title: track.title || 'Unknown',
         artist: track.artist || 'Unknown',
-        album: track.album || 'Unknown',
+        albumArtist: track.album_artist_name || track.album_artist || undefined,
+        album: track.album_title || track.album || 'Unknown',
         trackNo: track.track_no,
         duration: track.length || 0,
         bpm: track.tempo || undefined,
@@ -241,6 +242,29 @@ function setupIpcHandlers() {
       return { success: true, plan };
     } catch (error) {
       console.error('Error generating organize plan:', error);
+      return {
+        success: false,
+        message:
+          error instanceof Error ? error.message : 'Unknown error occurred',
+      };
+    }
+  });
+
+  ipcMain.handle('reset-library', async () => {
+    try {
+      const userDataPath = app.getPath('userData');
+      const configPath = path.join(userDataPath, 'config.json');
+
+      if (fs.existsSync(configPath)) {
+        fs.unlinkSync(configPath);
+      }
+
+      return {
+        success: true,
+        message: 'Library configuration reset successfully',
+      };
+    } catch (error) {
+      console.error('Error resetting library:', error);
       return {
         success: false,
         message:

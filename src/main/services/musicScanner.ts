@@ -56,9 +56,13 @@ export class MusicScanner {
       const grandParentDir = path.dirname(parentDir);
 
       let artist = metadata.common.artist;
+      let albumArtist = metadata.common.albumartist;
       let title = metadata.common.title;
       let album = metadata.common.album;
       let trackNo = metadata.common.track.no;
+
+      const isUnknown = (s: string | undefined) =>
+        !s || s.toLowerCase().trim() === 'unknown';
 
       // 1. Try to extract track number from filename (e.g., "01 - Title.mp3")
       if (!trackNo) {
@@ -68,8 +72,8 @@ export class MusicScanner {
         }
       }
 
-      // 2. Guess from filename if missing
-      if (!artist || !title) {
+      // 2. Guess from filename if missing or "Unknown"
+      if (isUnknown(artist) || isUnknown(title)) {
         // Normalize filename: replace underscores with spaces for easier parsing
         const normalized = fileName.replace(/_/g, ' ');
         // Split by common separators: " - ", " -", "- " or just "-"
@@ -77,53 +81,58 @@ export class MusicScanner {
 
         if (parts.length >= 3) {
           // Likely [TrackNo] - [Artist] - [Title]
-          // If the first part is a number, it's the track number
           const firstIsNumber = /^\d+$/.test(parts[0].trim());
           if (firstIsNumber) {
-            if (!artist) artist = parts[1].trim();
-            if (!title) title = parts[2].trim();
+            if (isUnknown(artist)) artist = parts[1].trim();
+            if (isUnknown(title)) title = parts[2].trim();
           } else {
-            if (!artist) artist = parts[0].trim();
-            if (!title) title = parts[1].trim();
+            if (isUnknown(artist)) artist = parts[0].trim();
+            if (isUnknown(title)) title = parts[1].trim();
           }
         } else if (parts.length === 2) {
           // Likely [Artist] - [Title] or [TrackNo] - [Title]
           const firstIsNumber = /^\d+$/.test(parts[0].trim());
           if (firstIsNumber) {
-            if (!title) title = parts[1].trim();
+            if (isUnknown(title)) title = parts[1].trim();
           } else {
-            if (!artist) artist = parts[0].trim();
-            if (!title) title = parts[1].trim();
+            if (isUnknown(artist)) artist = parts[0].trim();
+            if (isUnknown(title)) title = parts[1].trim();
           }
         }
 
         // Final fallback for title if still missing
-        if (!title) {
+        if (isUnknown(title)) {
           title = normalized.replace(/^\d+[\s._-]*/, '').trim();
         }
       }
 
-      // 3. Guess from Folder Structure if still missing
-      if (!album || album.toLowerCase() === 'unknown') {
+      // 3. Guess from Folder Structure if still missing or "Unknown"
+      if (isUnknown(album)) {
         const folderName = path.basename(parentDir);
         if (folderName && folderName !== '.' && folderName !== 'Music') {
           album = folderName;
         }
       }
 
-      if (!artist || artist.toLowerCase() === 'unknown') {
+      if (isUnknown(artist)) {
         const folderName = path.basename(grandParentDir);
         if (folderName && folderName !== '.' && folderName !== 'Music') {
           artist = folderName;
         }
       }
 
+      // Use Album Artist if available, otherwise fallback to Artist
+      if (isUnknown(albumArtist) && !isUnknown(artist)) {
+        albumArtist = artist;
+      }
+
       return {
         file_path: filePath,
         file_hash: await this.calculateFileHash(filePath),
-        artist: artist || undefined,
-        title: title || undefined,
-        album: album || undefined,
+        artist: isUnknown(artist) ? undefined : artist,
+        album_artist: isUnknown(albumArtist) ? undefined : albumArtist,
+        title: isUnknown(title) ? undefined : title,
+        album: isUnknown(album) ? undefined : album,
         track_no: trackNo || undefined,
         tempo: metadata.common.bpm
           ? Math.round(metadata.common.bpm)
@@ -217,7 +226,21 @@ export class MusicScanner {
           }
 
           const metadata = await this.extractMetadata(filePath);
-          this.db.insertTrack(metadata);
+
+          // Handle normalized tables
+          const albumArtist =
+            metadata.album_artist || metadata.artist || 'Unknown';
+          const artistId = this.db.getOrCreateArtist(albumArtist);
+          const albumId = this.db.getOrCreateAlbum(
+            metadata.album || 'Unknown',
+            artistId
+          );
+
+          this.db.insertTrack({
+            ...metadata,
+            id: existingTrack?.id,
+            album_id: albumId,
+          });
           console.log(
             `Processed: ${metadata.artist || 'Unknown'} - ${metadata.title || path.basename(filePath)}`
           );
@@ -230,6 +253,20 @@ export class MusicScanner {
       console.log(
         `Scan completed. Processed ${progress.processedFiles} files with ${progress.errors.length} errors.`
       );
+
+      // Cleanup deleted files
+      const currentPaths = new Set(musicFiles);
+      const existingTracks = this.db.getAllTracks();
+      const deletedFiles = existingTracks.filter(
+        (track) => !currentPaths.has(track.file_path)
+      );
+
+      for (const track of deletedFiles) {
+        this.db.deleteTrack(track.id);
+        console.log(
+          `Removed deleted: ${track.artist || 'Unknown'} - ${track.title || path.basename(track.file_path)}`
+        );
+      }
     } catch (error) {
       console.error('Library scan failed:', error);
       progress.errors.push(`Scan failed: ${error}`);
@@ -268,7 +305,20 @@ export class MusicScanner {
 
         try {
           const metadata = await this.extractMetadata(filePath);
-          this.db.insertTrack(metadata);
+
+          // Handle normalized tables
+          const albumArtist =
+            metadata.album_artist || metadata.artist || 'Unknown';
+          const artistId = this.db.getOrCreateArtist(albumArtist);
+          const albumId = this.db.getOrCreateAlbum(
+            metadata.album || 'Unknown',
+            artistId
+          );
+
+          this.db.insertTrack({
+            ...metadata,
+            album_id: albumId,
+          });
           console.log(
             `Added new: ${metadata.artist || 'Unknown'} - ${metadata.title || path.basename(filePath)}`
           );

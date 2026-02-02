@@ -20,6 +20,7 @@ export interface Track {
   id: string;
   title: string;
   artist: string;
+  albumArtist?: string;
   album: string;
   trackNo?: number;
   duration: number;
@@ -108,6 +109,7 @@ export interface ElectronAPI {
   ) => Promise<UpdateTrackResponse>;
   detectDuplicates: () => Promise<DetectDuplicatesResponse>;
   generateOrganizePlan: () => Promise<OrganizePlanResponse>;
+  resetLibrary: () => Promise<IpcResponse>;
 }
 
 declare global {

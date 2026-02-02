@@ -42,6 +42,11 @@ const electronAPI = {
     console.log('generateOrganizePlan');
     return ipcRenderer.invoke('generate-organize-plan');
   },
+
+  resetLibrary: () => {
+    console.log('resetLibrary');
+    return ipcRenderer.invoke('reset-library');
+  },
 };
 
 // Expose the API to the renderer process
