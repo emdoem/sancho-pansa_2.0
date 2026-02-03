@@ -46,6 +46,7 @@ export interface ScanLibraryResponse {
 export interface UpdateTrackRequest {
   title: string;
   artist: string;
+  albumArtist?: string;
   album: string;
   bpm: number | null;
 }

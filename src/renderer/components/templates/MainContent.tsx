@@ -22,6 +22,7 @@ export const MainContent = () => {
   const [editForm, setEditForm] = useState({
     title: '',
     artist: '',
+    albumArtist: '',
     album: '',
     bpm: '',
   });
@@ -143,6 +144,7 @@ export const MainContent = () => {
     setEditForm({
       title: track.title,
       artist: track.artist,
+      albumArtist: track.albumArtist || '',
       album: track.album,
       bpm: track.bpm?.toString() || '',
     });
@@ -156,6 +158,7 @@ export const MainContent = () => {
       const result = await window.electronAPI.updateTrack(selectedTrack.id, {
         title: editForm.title,
         artist: editForm.artist,
+        albumArtist: editForm.albumArtist,
         album: editForm.album,
         bpm: editForm.bpm ? parseInt(editForm.bpm) : null,
       });

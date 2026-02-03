@@ -188,6 +188,7 @@ function setupIpcHandlers() {
         db.updateTrack(data.trackId, {
           title: data.updates.title,
           artist: data.updates.artist,
+          album_artist: data.updates.albumArtist,
           album: data.updates.album,
           tempo: data.updates.bpm,
         });

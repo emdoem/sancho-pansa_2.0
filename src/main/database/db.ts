@@ -250,10 +250,18 @@ class MusicLibraryDB {
     updates: {
       title?: string;
       artist?: string;
+      album_artist?: string;
       album?: string;
       tempo?: number | null;
     }
   ): void {
+    // 1. Get current track data to handle partial updates for normalization
+    const current = this.db
+      .prepare('SELECT * FROM tracks WHERE id = ?')
+      .get(trackId) as any;
+
+    if (!current) return;
+
     const fields: string[] = [];
     const values: any[] = [];
 
@@ -265,6 +273,10 @@ class MusicLibraryDB {
       fields.push('artist = ?');
       values.push(updates.artist);
     }
+    if (updates.album_artist !== undefined) {
+      fields.push('album_artist = ?');
+      values.push(updates.album_artist);
+    }
     if (updates.album !== undefined) {
       fields.push('album = ?');
       values.push(updates.album);
@@ -274,11 +286,47 @@ class MusicLibraryDB {
       values.push(updates.tempo);
     }
 
+    // 2. Handle normalization update if artist or album changed
+    const artistChanged =
+      updates.artist !== undefined || updates.album_artist !== undefined;
+    const albumChanged = updates.album !== undefined;
+
+    if (artistChanged || albumChanged) {
+      const newArtist = updates.artist ?? current.artist;
+      const newAlbumArtist = updates.album_artist ?? current.album_artist;
+      const newAlbum = updates.album ?? current.album;
+
+      const mainArtist = newAlbumArtist || newArtist || 'Unknown';
+      const artistId = this.getOrCreateArtist(mainArtist);
+      const albumId = this.getOrCreateAlbum(newAlbum || 'Unknown', artistId);
+
+      fields.push('album_id = ?');
+      values.push(albumId);
+    }
+
     if (fields.length === 0) return;
 
     values.push(trackId);
     const query = `UPDATE tracks SET ${fields.join(', ')} WHERE id = ?`;
     this.db.prepare(query).run(...values);
+
+    // 3. Cleanup orphaned albums/artists
+    this.cleanupOrphans();
+  }
+
+  private cleanupOrphans(): void {
+    // Delete albums with no tracks
+    this.db
+      .prepare(
+        'DELETE FROM albums WHERE id NOT IN (SELECT DISTINCT album_id FROM tracks WHERE album_id IS NOT NULL)'
+      )
+      .run();
+    // Delete artists with no albums
+    this.db
+      .prepare(
+        'DELETE FROM artists WHERE id NOT IN (SELECT DISTINCT artist_id FROM albums)'
+      )
+      .run();
   }
 
   public getTrackByPath(filePath: string): any {
