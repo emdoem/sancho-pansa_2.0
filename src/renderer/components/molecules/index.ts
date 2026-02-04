@@ -1,4 +1,5 @@
 export * from './AppHeader';
+export * from './BulkEditModal';
 export * from './DuplicateResultModal';
 export * from './LibraryInfoDisplay';
 export * from './LibraryInfoNotConfigured';

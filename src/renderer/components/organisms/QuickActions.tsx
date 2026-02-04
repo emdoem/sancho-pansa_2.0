@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Accordion, AccordionSummary, AccordionDetails, Stack } from '@mui/joy';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import SearchIcon from '@mui/icons-material/Search';
-import DriveFileRenameOutlineIcon from '@mui/icons-material/DriveFileRenameOutline';
+import EditIcon from '@mui/icons-material/Edit';
 import PlaylistAddIcon from '@mui/icons-material/PlaylistAdd';
 import { QuickActionButton } from '../atoms';
 import {
@@ -16,7 +16,11 @@ import type {
   OrganizePlan,
 } from '../../types/electron';
 
-export const QuickActions = () => {
+interface QuickActionsProps {
+  onToggleBulkEdit: (enabled: boolean) => void;
+}
+
+export const QuickActions = ({ onToggleBulkEdit }: QuickActionsProps) => {
   const [isDuplicateModalOpen, setIsDuplicateModalOpen] = useState(false);
   const [duplicateResult, setDuplicateResult] = useState<
     DetectDuplicatesResponse['result'] | null
@@ -64,9 +68,10 @@ export const QuickActions = () => {
               disabled={isLoading}
             />
             <QuickActionButton
-              label="Rename Files"
-              icon={<DriveFileRenameOutlineIcon />}
+              label="Bulk Edit Tracks"
+              icon={<EditIcon />}
               color="neutral"
+              onClick={() => onToggleBulkEdit(true)}
             />
             <QuickActionButton
               label="Import Playlist"

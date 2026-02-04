@@ -10,6 +10,10 @@ interface TrackTableProps {
   getFileName: (filePath: string) => string;
   formatDuration: (seconds: number) => string;
   formatFileSize: (bytes: number) => string;
+  showCheckboxes?: boolean;
+  selectedTrackIds?: Set<string>;
+  onToggleSelect?: (trackId: string) => void;
+  onSelectAll?: () => void;
 }
 
 export const TrackTable = ({
@@ -18,6 +22,10 @@ export const TrackTable = ({
   getFileName,
   formatDuration,
   formatFileSize,
+  showCheckboxes = false,
+  selectedTrackIds = new Set(),
+  onToggleSelect,
+  onSelectAll,
 }: TrackTableProps) => {
   const parentRef = useRef<HTMLDivElement>(null);
 
@@ -29,6 +37,9 @@ export const TrackTable = ({
   });
 
   const items = rowVirtualizer.getVirtualItems();
+  const isAllSelected =
+    tracks.length > 0 &&
+    tracks.every((track) => selectedTrackIds.has(track.id));
 
   return (
     <Box
@@ -51,10 +62,25 @@ export const TrackTable = ({
           backgroundColor: 'background.level2',
         }}
       >
-        <TrackTableHeader label="Title" flex="25%" />
-        <TrackTableHeader label="Artist" flex="15%" />
-        <TrackTableHeader label="Album" flex="15%" />
-        <TrackTableHeader label="File Name" flex="20%" />
+        {showCheckboxes && (
+          <TrackTableHeader
+            flex="5%"
+            textAlign="center"
+            showCheckbox
+            isAllSelected={isAllSelected}
+            onSelectAll={onSelectAll}
+          />
+        )}
+        <TrackTableHeader label="Title" flex={showCheckboxes ? '22%' : '25%'} />
+        <TrackTableHeader
+          label="Artist"
+          flex={showCheckboxes ? '13%' : '15%'}
+        />
+        <TrackTableHeader label="Album" flex={showCheckboxes ? '13%' : '15%'} />
+        <TrackTableHeader
+          label="File Name"
+          flex={showCheckboxes ? '18%' : '20%'}
+        />
         <TrackTableHeader label="BPM" flex="5%" textAlign="center" />
         <TrackTableHeader label="Duration" flex="8%" textAlign="right" />
         <TrackTableHeader label="Size" flex="7%" textAlign="right" />
@@ -92,6 +118,9 @@ export const TrackTable = ({
                 getFileName={getFileName}
                 formatDuration={formatDuration}
                 formatFileSize={formatFileSize}
+                showCheckbox={showCheckboxes}
+                isSelected={selectedTrackIds.has(tracks[virtualRow.index].id)}
+                onToggleSelect={onToggleSelect}
               />
             </Box>
           ))}

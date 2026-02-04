@@ -98,6 +98,29 @@ export interface OrganizePlanResponse {
   plan?: OrganizePlan;
 }
 
+export interface BulkUpdateTrackRequest {
+  artist?: string;
+  albumArtist?: string;
+  album?: string;
+}
+
+export interface BulkUpdateTrackResponse {
+  success: boolean;
+  message?: string;
+  updatedCount?: number;
+}
+
+export interface OrganizeProgress {
+  total: number;
+  current: number;
+  action: string;
+}
+
+export interface OrganizeExecuteResponse {
+  success: boolean;
+  errors: string[];
+}
+
 export interface ElectronAPI {
   configureMusicLibrary: () => Promise<IpcResponse>;
   exposeUserDataPath: () => Promise<string>;
@@ -110,7 +133,15 @@ export interface ElectronAPI {
   ) => Promise<UpdateTrackResponse>;
   detectDuplicates: () => Promise<DetectDuplicatesResponse>;
   generateOrganizePlan: () => Promise<OrganizePlanResponse>;
+  executeOrganizePlan: (plan: OrganizePlan) => Promise<OrganizeExecuteResponse>;
+  onOrganizeProgress: (
+    callback: (progress: OrganizeProgress) => void
+  ) => () => void;
   resetLibrary: () => Promise<IpcResponse>;
+  bulkUpdateTracks: (
+    trackIds: string[],
+    updates: BulkUpdateTrackRequest
+  ) => Promise<BulkUpdateTrackResponse>;
 }
 
 declare global {

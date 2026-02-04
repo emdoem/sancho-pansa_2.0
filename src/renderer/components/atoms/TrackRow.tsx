@@ -1,4 +1,4 @@
-import { Box, Typography, IconButton } from '@mui/joy';
+import { Box, Typography, IconButton, Checkbox } from '@mui/joy';
 import EditIcon from '@mui/icons-material/Edit';
 import type { Track } from '../../../types/electron';
 
@@ -8,6 +8,9 @@ interface TrackRowProps {
   getFileName: (filePath: string) => string;
   formatDuration: (seconds: number) => string;
   formatFileSize: (bytes: number) => string;
+  showCheckbox?: boolean;
+  isSelected?: boolean;
+  onToggleSelect?: (trackId: string) => void;
 }
 
 export const TrackRow = ({
@@ -16,6 +19,9 @@ export const TrackRow = ({
   getFileName,
   formatDuration,
   formatFileSize,
+  showCheckbox = false,
+  isSelected = false,
+  onToggleSelect,
 }: TrackRowProps) => (
   <Box
     sx={{
@@ -31,9 +37,25 @@ export const TrackRow = ({
       },
     }}
   >
+    {showCheckbox && (
+      <Box
+        sx={{
+          flex: '0 0 5%',
+          padding: '12px',
+          textAlign: 'center',
+          overflow: 'hidden',
+        }}
+      >
+        <Checkbox
+          checked={isSelected}
+          onChange={() => onToggleSelect?.(track.id)}
+          size="sm"
+        />
+      </Box>
+    )}
     <Box
       sx={{
-        flex: '0 0 25%',
+        flex: showCheckbox ? '0 0 22%' : '0 0 25%',
         padding: '12px',
         overflow: 'hidden',
       }}
@@ -44,7 +66,7 @@ export const TrackRow = ({
     </Box>
     <Box
       sx={{
-        flex: '0 0 15%',
+        flex: showCheckbox ? '0 0 13%' : '0 0 15%',
         padding: '12px',
         overflow: 'hidden',
       }}
@@ -55,7 +77,7 @@ export const TrackRow = ({
     </Box>
     <Box
       sx={{
-        flex: '0 0 15%',
+        flex: showCheckbox ? '0 0 13%' : '0 0 15%',
         padding: '12px',
         overflow: 'hidden',
       }}
@@ -66,7 +88,7 @@ export const TrackRow = ({
     </Box>
     <Box
       sx={{
-        flex: '0 0 20%',
+        flex: showCheckbox ? '0 0 18%' : '0 0 20%',
         padding: '12px',
         overflow: 'hidden',
       }}

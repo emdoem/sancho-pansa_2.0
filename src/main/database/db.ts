@@ -314,6 +314,12 @@ class MusicLibraryDB {
     this.cleanupOrphans();
   }
 
+  public updateTrackPath(trackId: string, newPath: string): void {
+    this.db
+      .prepare('UPDATE tracks SET file_path = ? WHERE id = ?')
+      .run(newPath, trackId);
+  }
+
   private cleanupOrphans(): void {
     // Delete albums with no tracks
     this.db

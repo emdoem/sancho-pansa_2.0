@@ -43,9 +43,27 @@ const electronAPI = {
     return ipcRenderer.invoke('generate-organize-plan');
   },
 
+  executeOrganizePlan: (plan: any) => {
+    console.log('executeOrganizePlan');
+    return ipcRenderer.invoke('execute-organize-plan', plan);
+  },
+
+  onOrganizeProgress: (callback: (progress: any) => void) => {
+    const subscription = (_: any, value: any) => callback(value);
+    ipcRenderer.on('organize-progress', subscription);
+    return () => {
+      ipcRenderer.removeListener('organize-progress', subscription);
+    };
+  },
+
   resetLibrary: () => {
     console.log('resetLibrary');
     return ipcRenderer.invoke('reset-library');
+  },
+
+  bulkUpdateTracks: (trackIds: string[], updates: any) => {
+    console.log('bulkUpdateTracks');
+    return ipcRenderer.invoke('bulk-update-tracks', { trackIds, updates });
   },
 };
 

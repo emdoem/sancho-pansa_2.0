@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   Modal,
   ModalDialog,
@@ -14,9 +14,11 @@ import {
   ListItemContent,
   Chip,
   Box,
+  LinearProgress,
 } from '@mui/joy';
 import { SearchInput } from '../atoms';
-import type { OrganizePlan } from '../../../types/electron';
+import type { OrganizePlan, OrganizeProgress } from '../../types/electron';
+import { handleExecuteOrganizePlan } from '../../utils/apiHandlers';
 
 interface OrganizePlanModalProps {
   isOpen: boolean;
@@ -29,9 +31,53 @@ export const OrganizePlanModal = ({
   isOpen,
   onClose,
   plan,
-  onApply,
+  onApply: _onApply, // unused, we override it locally
 }: OrganizePlanModalProps) => {
   const [searchQuery, setSearchQuery] = useState('');
+  const [isExecuting, setIsExecuting] = useState(false);
+  const [progress, setProgress] = useState<OrganizeProgress | null>(null);
+
+  useEffect(() => {
+    // Listen for progress updates
+    const cleanup = window.electronAPI.onOrganizeProgress((p) => {
+      setProgress(p);
+    });
+    return cleanup;
+  }, []);
+
+  const handleApply = async () => {
+    if (!plan) return;
+    if (
+      !confirm(
+        'This will permanently move and delete files as listed in the plan. Are you sure you want to proceed?'
+      )
+    ) {
+      return;
+    }
+
+    setIsExecuting(true);
+    setProgress({ total: 0, current: 0, action: 'Starting...' });
+
+    try {
+      const result = await handleExecuteOrganizePlan(plan);
+      if (result.success) {
+        alert('Library organized successfully!');
+        onClose();
+        // Ideally trigger a refresh of the library view here
+        window.location.reload();
+      } else {
+        alert(
+          'Organization completed with errors:\n' + result.errors.join('\n')
+        );
+      }
+    } catch (error) {
+      console.error('Execute plan failed:', error);
+      alert('An unexpected error occurred.');
+    } finally {
+      setIsExecuting(false);
+      setProgress(null);
+    }
+  };
 
   const filteredActions = useMemo(() => {
     if (!plan) return [];
@@ -61,11 +107,31 @@ export const OrganizePlanModal = ({
   };
 
   return (
-    <Modal open={isOpen} onClose={onClose}>
+    <Modal open={isOpen} onClose={!isExecuting ? onClose : undefined}>
       <ModalDialog sx={{ minWidth: 700, maxWidth: '90vw', maxHeight: '85vh' }}>
-        <DialogTitle>Library Reorganization Plan (Dry Run)</DialogTitle>
+        <DialogTitle>Library Reorganization Plan</DialogTitle>
         <DialogContent sx={{ overflow: 'auto', mt: 2 }}>
           <Stack gap={3}>
+            {/* Progress Bar (when executing) */}
+            {isExecuting && (
+              <Stack gap={1}>
+                <Typography level="title-sm">
+                  {progress?.action || 'Processing...'}
+                </Typography>
+                <LinearProgress
+                  determinate
+                  value={
+                    progress && progress.total > 0
+                      ? (progress.current / progress.total) * 100
+                      : 0
+                  }
+                />
+                <Typography level="body-xs" sx={{ alignSelf: 'flex-end' }}>
+                  {progress?.current} / {progress?.total}
+                </Typography>
+              </Stack>
+            )}
+
             {/* Stats Summary */}
             <Box
               sx={{
@@ -190,11 +256,21 @@ export const OrganizePlanModal = ({
           </Stack>
         </DialogContent>
         <DialogActions>
-          <Button variant="plain" color="neutral" onClick={onClose}>
+          <Button
+            variant="plain"
+            color="neutral"
+            onClick={onClose}
+            disabled={isExecuting}
+          >
             Cancel
           </Button>
-          <Button variant="solid" color="primary" onClick={onApply}>
-            Apply Changes
+          <Button
+            variant="solid"
+            color="primary"
+            onClick={handleApply}
+            disabled={isExecuting}
+          >
+            {isExecuting ? 'Processing...' : 'Apply Changes'}
           </Button>
         </DialogActions>
       </ModalDialog>

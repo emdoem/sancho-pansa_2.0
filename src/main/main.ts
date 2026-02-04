@@ -206,6 +206,58 @@ function setupIpcHandlers() {
     }
   );
 
+  ipcMain.handle(
+    'bulk-update-tracks',
+    async (_, data: { trackIds: string[]; updates: any }) => {
+      try {
+        const config = getLibraryConfig();
+        if (!config) {
+          return { success: false, message: 'Library not configured' };
+        }
+
+        const db = new MusicLibraryDB(path.dirname(config.dbPath));
+
+        // Prepare updates object, only including fields with values
+        const dbUpdates: any = {};
+        if (data.updates.artist !== undefined) {
+          dbUpdates.artist = data.updates.artist;
+        }
+        if (data.updates.albumArtist !== undefined) {
+          dbUpdates.album_artist = data.updates.albumArtist;
+        }
+        if (data.updates.album !== undefined) {
+          dbUpdates.album = data.updates.album;
+        }
+
+        // Update each track
+        let updatedCount = 0;
+        for (const trackId of data.trackIds) {
+          try {
+            db.updateTrack(trackId, dbUpdates);
+            updatedCount++;
+          } catch (error) {
+            console.error(`Error updating track ${trackId}:`, error);
+          }
+        }
+
+        db.close();
+
+        return {
+          success: true,
+          message: `Successfully updated ${updatedCount} track${updatedCount !== 1 ? 's' : ''}`,
+          updatedCount,
+        };
+      } catch (error) {
+        console.error('Error bulk updating tracks:', error);
+        return {
+          success: false,
+          message:
+            error instanceof Error ? error.message : 'Unknown error occurred',
+        };
+      }
+    }
+  );
+
   ipcMain.handle('detect-duplicates', async () => {
     try {
       const config = getLibraryConfig();
@@ -243,6 +295,38 @@ function setupIpcHandlers() {
       return { success: true, plan };
     } catch (error) {
       console.error('Error generating organize plan:', error);
+      return {
+        success: false,
+        message:
+          error instanceof Error ? error.message : 'Unknown error occurred',
+      };
+    }
+  });
+
+  ipcMain.handle('execute-organize-plan', async (_, plan) => {
+    try {
+      const config = getLibraryConfig();
+      if (!config) {
+        return { success: false, message: 'Library not configured' };
+      }
+
+      // Get the window to send progress updates
+      const window = BrowserWindow.getAllWindows()[0];
+
+      const db = new MusicLibraryDB(path.dirname(config.dbPath));
+      const organizer = new LibraryOrganizer(db);
+
+      const result = await organizer.executePlan(plan, (progress) => {
+        if (window) {
+          window.webContents.send('organize-progress', progress);
+        }
+      });
+
+      db.close();
+
+      return { success: result.success, errors: result.errors };
+    } catch (error) {
+      console.error('Error executing organize plan:', error);
       return {
         success: false,
         message:

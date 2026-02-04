@@ -1,3 +1,4 @@
+import { promises as fs } from 'fs';
 import path from 'path';
 import MusicLibraryDB from '../database/db';
 
@@ -161,5 +162,100 @@ export class LibraryOrganizer {
 
     plan.actions = actions;
     return plan;
+  }
+
+  public async executePlan(
+    plan: OrganizePlan,
+    onProgress?: (progress: {
+      total: number;
+      current: number;
+      action: string;
+    }) => void
+  ): Promise<{ success: boolean; errors: string[] }> {
+    const errors: string[] = [];
+    let processed = 0;
+    const actionsToExecute = plan.actions.filter((a) => a.type !== 'KEEP');
+    const total = actionsToExecute.length;
+
+    console.log(`Executing ${total} actions...`);
+
+    for (const action of actionsToExecute) {
+      processed++;
+      if (onProgress) {
+        onProgress({
+          total,
+          current: processed,
+          action: `${action.type}: ${path.basename(action.sourcePath)}`,
+        });
+      }
+
+      try {
+        if (action.type === 'DELETE') {
+          // Verify file exists before deleting
+          try {
+            await fs.access(action.sourcePath);
+            await fs.unlink(action.sourcePath);
+            // We need the track ID to remove from DB. Since action doesn't have it,
+            // we'll look it up by path. This assumes path is unique.
+            const track = this.db.getTrackByPath(action.sourcePath);
+            if (track) {
+              this.db.deleteTrack(track.id);
+            }
+          } catch (e: any) {
+            if (e.code !== 'ENOENT') throw e;
+            // File already gone, just clean DB
+            const track = this.db.getTrackByPath(action.sourcePath);
+            if (track) {
+              this.db.deleteTrack(track.id);
+            }
+          }
+        } else if (action.type === 'MOVE' && action.targetPath) {
+          // 1. Ensure target directory exists
+          await fs.mkdir(path.dirname(action.targetPath), { recursive: true });
+
+          // 2. Copy file (safer than rename across partitions/drives)
+          await fs.copyFile(action.sourcePath, action.targetPath);
+
+          // 3. Verify copy
+          const sourceStats = await fs.stat(action.sourcePath);
+          const targetStats = await fs.stat(action.targetPath);
+
+          if (sourceStats.size !== targetStats.size) {
+            throw new Error(
+              `Copy verification failed for ${action.sourcePath} -> ${action.targetPath}`
+            );
+          }
+
+          // 4. Delete source
+          await fs.unlink(action.sourcePath);
+
+          // 5. Update DB
+          const track = this.db.getTrackByPath(action.sourcePath);
+          if (track) {
+            // We need a way to update file_path directly since updateTrack is for metadata
+            // I'll assume I can access the db instance directly for now or add a method
+            // Since `private db` is accessible within this class which imports `MusicLibraryDB`,
+            // wait, `this.db` is the wrapper class instance.
+            // I should add `updateTrackPath` to MusicLibraryDB.
+            // For now, I'll cheat and cast to any to access the raw better-sqlite3 db if possible,
+            // OR better, add the method to DB class.
+            // Let's add `updateTrackPath` to MusicLibraryDB in next step.
+            this.db.updateTrackPath(track.id, action.targetPath);
+          }
+        }
+      } catch (error: any) {
+        console.error(
+          `Action failed: ${action.type} ${action.sourcePath}`,
+          error
+        );
+        errors.push(
+          `Failed to ${action.type} ${path.basename(action.sourcePath)}: ${
+            error.message
+          }`
+        );
+      }
+    }
+
+    return { success: errors.length === 0, errors };
   }
 }

@@ -2,7 +2,7 @@ import { Stack, Typography, AccordionGroup } from '@mui/joy';
 import { useState, useEffect } from 'react';
 import type { Track } from '../../types/electron';
 import { ConfigMessage } from '../atoms';
-import { TrackEditModal } from '../molecules';
+import { TrackEditModal, BulkEditModal } from '../molecules';
 import { LibraryInfo, QuickActions, TrackListing } from '../organisms';
 
 export const MainContent = () => {
@@ -25,6 +25,16 @@ export const MainContent = () => {
     albumArtist: '',
     album: '',
     bpm: '',
+  });
+  const [showCheckboxes, setShowCheckboxes] = useState(false);
+  const [selectedTrackIds, setSelectedTrackIds] = useState<Set<string>>(
+    new Set()
+  );
+  const [isBulkEditModalOpen, setIsBulkEditModalOpen] = useState(false);
+  const [bulkEditForm, setBulkEditForm] = useState({
+    artist: '',
+    albumArtist: '',
+    album: '',
   });
 
   const loadTracks = async () => {
@@ -194,6 +204,94 @@ export const MainContent = () => {
     return filePath.split(/[\\/]/).pop() || '';
   };
 
+  const handleToggleBulkEditMode = (enabled: boolean) => {
+    setShowCheckboxes(enabled);
+    if (!enabled) {
+      setSelectedTrackIds(new Set());
+    }
+  };
+
+  const handleToggleSelect = (trackId: string) => {
+    setSelectedTrackIds((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(trackId)) {
+        newSet.delete(trackId);
+      } else {
+        newSet.add(trackId);
+      }
+      return newSet;
+    });
+  };
+
+  const handleSelectAll = () => {
+    if (selectedTrackIds.size === filteredTracks.length) {
+      setSelectedTrackIds(new Set());
+    } else {
+      setSelectedTrackIds(new Set(filteredTracks.map((track) => track.id)));
+    }
+  };
+
+  const handleOpenBulkEdit = () => {
+    setIsBulkEditModalOpen(true);
+  };
+
+  const handleCloseBulkEdit = () => {
+    setIsBulkEditModalOpen(false);
+    setBulkEditForm({ artist: '', albumArtist: '', album: '' });
+  };
+
+  const handleSaveBulkEdit = async () => {
+    if (selectedTrackIds.size === 0) return;
+
+    // Build updates object with only truthy values
+    const updates: { artist?: string; albumArtist?: string; album?: string } =
+      {};
+    if (bulkEditForm.artist.trim()) updates.artist = bulkEditForm.artist.trim();
+    if (bulkEditForm.albumArtist.trim())
+      updates.albumArtist = bulkEditForm.albumArtist.trim();
+    if (bulkEditForm.album.trim()) updates.album = bulkEditForm.album.trim();
+
+    // If no fields have values, don't proceed
+    if (Object.keys(updates).length === 0) {
+      setConfigMessage({
+        type: 'error',
+        text: 'Please fill in at least one field to update',
+      });
+      return;
+    }
+
+    try {
+      const result = await window.electronAPI.bulkUpdateTracks(
+        Array.from(selectedTrackIds),
+        updates
+      );
+
+      if (result.success) {
+        setConfigMessage({
+          type: 'success',
+          text: `Successfully updated ${result.updatedCount} track${result.updatedCount !== 1 ? 's' : ''}`,
+        });
+        await loadTracks();
+        setShowCheckboxes(false);
+        setSelectedTrackIds(new Set());
+      } else {
+        setConfigMessage({
+          type: 'error',
+          text: result.message || 'Failed to update tracks',
+        });
+      }
+    } catch (error) {
+      setConfigMessage({
+        type: 'error',
+        text:
+          error instanceof Error ? error.message : 'Failed to update tracks',
+      });
+    } finally {
+      setIsBulkEditModalOpen(false);
+      setBulkEditForm({ artist: '', albumArtist: '', album: '' });
+    }
+  };
+
   const filteredTracks = tracks
     ? tracks.filter(
         (track) =>
@@ -267,7 +365,7 @@ export const MainContent = () => {
               isScanning={isScanning}
             />
 
-            <QuickActions />
+            <QuickActions onToggleBulkEdit={handleToggleBulkEditMode} />
           </AccordionGroup>
 
           <TrackListing
@@ -280,6 +378,11 @@ export const MainContent = () => {
             getFileName={getFileName}
             formatDuration={formatDuration}
             formatFileSize={formatFileSize}
+            showCheckboxes={showCheckboxes}
+            selectedTrackIds={selectedTrackIds}
+            onToggleSelect={handleToggleSelect}
+            onSelectAll={handleSelectAll}
+            onBulkEdit={handleOpenBulkEdit}
           />
         </Stack>
       </Stack>
@@ -290,6 +393,15 @@ export const MainContent = () => {
         form={editForm}
         onFormChange={setEditForm}
         onSave={handleSaveTrack}
+      />
+
+      <BulkEditModal
+        isOpen={isBulkEditModalOpen}
+        onClose={handleCloseBulkEdit}
+        selectedCount={selectedTrackIds.size}
+        form={bulkEditForm}
+        onFormChange={setBulkEditForm}
+        onSave={handleSaveBulkEdit}
       />
     </Stack>
   );
