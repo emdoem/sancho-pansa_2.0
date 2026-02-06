@@ -5,6 +5,7 @@ import FirstTimeSetup from './first-time-setup';
 import MusicLibraryDB from './database/db';
 import { MusicScanner } from './services/musicScanner';
 import { LibraryOrganizer } from './services/libraryOrganizer';
+import { MetadataWriter } from './services/metadataWriter';
 
 function createWindow() {
   const preloadPath = path.join(__dirname, 'preload.js');
@@ -185,6 +186,17 @@ function setupIpcHandlers() {
         }
 
         const db = new MusicLibraryDB(path.dirname(config.dbPath));
+
+        // Get the track to find its file path
+        const tracks = db.getAllTracks();
+        const track = tracks.find((t: any) => t.id === data.trackId);
+
+        if (!track) {
+          db.close();
+          return { success: false, message: 'Track not found' };
+        }
+
+        // Update database
         db.updateTrack(data.trackId, {
           title: data.updates.title,
           artist: data.updates.artist,
@@ -192,9 +204,29 @@ function setupIpcHandlers() {
           album: data.updates.album,
           tempo: data.updates.bpm,
         });
+
+        // Sync metadata to file
+        const metadataWriter = new MetadataWriter();
+        const metadataSyncSuccess = await metadataWriter.writeMetadata(
+          track.file_path,
+          {
+            title: data.updates.title,
+            artist: data.updates.artist,
+            albumArtist: data.updates.albumArtist,
+            album: data.updates.album,
+            trackNo: data.updates.trackNo,
+            tempo: data.updates.bpm,
+          }
+        );
+
         db.close();
 
-        return { success: true, message: 'Track updated successfully' };
+        return {
+          success: true,
+          message: metadataSyncSuccess
+            ? 'Track and file metadata updated successfully'
+            : 'Track updated in database (file metadata sync failed or unsupported format)',
+        };
       } catch (error) {
         console.error('Error updating track:', error);
         return {
@@ -216,25 +248,44 @@ function setupIpcHandlers() {
         }
 
         const db = new MusicLibraryDB(path.dirname(config.dbPath));
+        const metadataWriter = new MetadataWriter();
 
         // Prepare updates object, only including fields with values
         const dbUpdates: any = {};
+        const fileMetadata: any = {};
+
         if (data.updates.artist !== undefined) {
           dbUpdates.artist = data.updates.artist;
+          fileMetadata.artist = data.updates.artist;
         }
         if (data.updates.albumArtist !== undefined) {
           dbUpdates.album_artist = data.updates.albumArtist;
+          fileMetadata.albumArtist = data.updates.albumArtist;
         }
         if (data.updates.album !== undefined) {
           dbUpdates.album = data.updates.album;
+          fileMetadata.album = data.updates.album;
         }
 
         // Update each track
         let updatedCount = 0;
+        let fileSyncCount = 0;
+        const tracks = db.getAllTracks();
+
         for (const trackId of data.trackIds) {
           try {
             db.updateTrack(trackId, dbUpdates);
             updatedCount++;
+
+            // Sync metadata to file
+            const track = tracks.find((t: any) => t.id === trackId);
+            if (track && Object.keys(fileMetadata).length > 0) {
+              const success = await metadataWriter.writeMetadata(
+                track.file_path,
+                fileMetadata
+              );
+              if (success) fileSyncCount++;
+            }
           } catch (error) {
             console.error(`Error updating track ${trackId}:`, error);
           }
@@ -244,7 +295,7 @@ function setupIpcHandlers() {
 
         return {
           success: true,
-          message: `Successfully updated ${updatedCount} track${updatedCount !== 1 ? 's' : ''}`,
+          message: `Successfully updated ${updatedCount} track${updatedCount !== 1 ? 's' : ''} (${fileSyncCount} file${fileSyncCount !== 1 ? 's' : ''} synced)`,
           updatedCount,
         };
       } catch (error) {
@@ -327,6 +378,76 @@ function setupIpcHandlers() {
       return { success: result.success, errors: result.errors };
     } catch (error) {
       console.error('Error executing organize plan:', error);
+      return {
+        success: false,
+        message:
+          error instanceof Error ? error.message : 'Unknown error occurred',
+      };
+    }
+  });
+
+  ipcMain.handle('sync-metadata', async () => {
+    try {
+      const config = getLibraryConfig();
+      if (!config) {
+        return { success: false, message: 'Library not configured' };
+      }
+
+      const window = BrowserWindow.getAllWindows()[0];
+      const db = new MusicLibraryDB(path.dirname(config.dbPath));
+      const metadataWriter = new MetadataWriter();
+      const tracks = db.getAllTracks();
+
+      let syncedCount = 0;
+      let failedCount = 0;
+      const total = tracks.length;
+
+      for (let i = 0; i < tracks.length; i++) {
+        const track = tracks[i];
+
+        if (window) {
+          window.webContents.send('sync-metadata-progress', {
+            total,
+            current: i + 1,
+            track: track.title || 'Unknown',
+          });
+        }
+
+        try {
+          const success = await metadataWriter.writeMetadata(track.file_path, {
+            title: track.title,
+            artist: track.artist,
+            albumArtist: track.album_artist,
+            album: track.album,
+            trackNo: track.track_no,
+            tempo: track.tempo,
+          });
+
+          if (success) {
+            syncedCount++;
+          } else {
+            failedCount++;
+          }
+        } catch (error) {
+          console.error(
+            `Error syncing metadata for ${track.file_path}:`,
+            error
+          );
+          failedCount++;
+        }
+      }
+
+      db.close();
+
+      return {
+        success: true,
+        message: `Metadata sync complete: ${syncedCount} synced, ${failedCount} failed (unsupported format or error)`,
+        syncedCount,
+        failedCount,
+        total,
+      };
+    } catch (error) {
+      console.error('Error syncing metadata:', error);
       return {
         success: false,
         message:

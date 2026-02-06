@@ -1,12 +1,18 @@
-import { useState } from 'react';
-import { Accordion, AccordionSummary, AccordionDetails, Stack } from '@mui/joy';
+import { useState, useEffect } from 'react';
+import {
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
+  Stack,
+  LinearProgress,
+  Typography,
+} from '@mui/joy';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import SearchIcon from '@mui/icons-material/Search';
 import EditIcon from '@mui/icons-material/Edit';
-import PlaylistAddIcon from '@mui/icons-material/PlaylistAdd';
+import SyncIcon from '@mui/icons-material/Sync';
 import { QuickActionButton } from '../atoms';
 import {
-  handleGetUserDataPath,
   handleDetectDuplicates,
   handleGenerateOrganizePlan,
 } from '../../utils/apiHandlers';
@@ -20,6 +26,12 @@ interface QuickActionsProps {
   onToggleBulkEdit: (enabled: boolean) => void;
 }
 
+interface SyncProgress {
+  total: number;
+  current: number;
+  track: string;
+}
+
 export const QuickActions = ({ onToggleBulkEdit }: QuickActionsProps) => {
   const [isDuplicateModalOpen, setIsDuplicateModalOpen] = useState(false);
   const [duplicateResult, setDuplicateResult] = useState<
@@ -28,6 +40,18 @@ export const QuickActions = ({ onToggleBulkEdit }: QuickActionsProps) => {
   const [isOrganizeModalOpen, setIsOrganizeModalOpen] = useState(false);
   const [organizePlan, setOrganizePlan] = useState<OrganizePlan | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [syncProgress, setSyncProgress] = useState<SyncProgress | null>(null);
+
+  useEffect(() => {
+    // Listen for sync progress updates
+    const cleanup = window.electronAPI.onSyncMetadataProgress(
+      (progress: SyncProgress) => {
+        setSyncProgress(progress);
+      }
+    );
+    return cleanup;
+  }, []);
 
   const onScanDuplicates = async () => {
     setIsLoading(true);
@@ -52,6 +76,34 @@ export const QuickActions = ({ onToggleBulkEdit }: QuickActionsProps) => {
     }
   };
 
+  const onSyncMetadata = async () => {
+    if (
+      !confirm(
+        'This will write all database metadata to the actual music files. Continue?'
+      )
+    ) {
+      return;
+    }
+
+    setIsSyncing(true);
+    setSyncProgress({ total: 0, current: 0, track: 'Starting...' });
+
+    try {
+      const result = await window.electronAPI.syncMetadata();
+      if (result.success) {
+        alert(result.message);
+      } else {
+        alert('Error: ' + result.message);
+      }
+    } catch (error) {
+      console.error('Sync error:', error);
+      alert('An error occurred during metadata sync');
+    } finally {
+      setIsSyncing(false);
+      setSyncProgress(null);
+    }
+  };
+
   return (
     <>
       <Accordion defaultExpanded>
@@ -65,21 +117,39 @@ export const QuickActions = ({ onToggleBulkEdit }: QuickActionsProps) => {
               icon={<SearchIcon />}
               color="primary"
               onClick={onScanDuplicates}
-              disabled={isLoading}
+              disabled={isLoading || isSyncing}
             />
             <QuickActionButton
               label="Bulk Edit Tracks"
               icon={<EditIcon />}
               color="neutral"
               onClick={() => onToggleBulkEdit(true)}
+              disabled={isSyncing}
             />
             <QuickActionButton
-              label="Import Playlist"
-              icon={<PlaylistAddIcon />}
+              label={isSyncing ? 'Syncing...' : 'Sync Metadata'}
+              icon={<SyncIcon />}
               color="neutral"
-              onClick={handleGetUserDataPath}
+              onClick={onSyncMetadata}
+              disabled={isLoading || isSyncing}
             />
           </Stack>
+          {isSyncing && syncProgress && (
+            <Stack gap={1} sx={{ mt: 2 }}>
+              <Typography level="body-sm">
+                Syncing: {syncProgress.track} ({syncProgress.current} /{' '}
+                {syncProgress.total})
+              </Typography>
+              <LinearProgress
+                determinate
+                value={
+                  syncProgress.total > 0
+                    ? (syncProgress.current / syncProgress.total) * 100
+                    : 0
+                }
+              />
+            </Stack>
+          )}
         </AccordionDetails>
       </Accordion>
 

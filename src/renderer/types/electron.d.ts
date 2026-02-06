@@ -121,6 +121,20 @@ export interface OrganizeExecuteResponse {
   errors: string[];
 }
 
+export interface SyncMetadataProgress {
+  total: number;
+  current: number;
+  track: string;
+}
+
+export interface SyncMetadataResponse {
+  success: boolean;
+  message: string;
+  syncedCount?: number;
+  failedCount?: number;
+  total?: number;
+}
+
 export interface ElectronAPI {
   configureMusicLibrary: () => Promise<IpcResponse>;
   exposeUserDataPath: () => Promise<string>;
@@ -136,6 +150,10 @@ export interface ElectronAPI {
   executeOrganizePlan: (plan: OrganizePlan) => Promise<OrganizeExecuteResponse>;
   onOrganizeProgress: (
     callback: (progress: OrganizeProgress) => void
+  ) => () => void;
+  syncMetadata: () => Promise<SyncMetadataResponse>;
+  onSyncMetadataProgress: (
+    callback: (progress: SyncMetadataProgress) => void
   ) => () => void;
   resetLibrary: () => Promise<IpcResponse>;
   bulkUpdateTracks: (

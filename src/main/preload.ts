@@ -65,6 +65,19 @@ const electronAPI = {
     console.log('bulkUpdateTracks');
     return ipcRenderer.invoke('bulk-update-tracks', { trackIds, updates });
   },
+
+  syncMetadata: () => {
+    console.log('syncMetadata');
+    return ipcRenderer.invoke('sync-metadata');
+  },
+
+  onSyncMetadataProgress: (callback: (progress: any) => void) => {
+    const subscription = (_: any, value: any) => callback(value);
+    ipcRenderer.on('sync-metadata-progress', subscription);
+    return () => {
+      ipcRenderer.removeListener('sync-metadata-progress', subscription);
+    };
+  },
 };
 
 // Expose the API to the renderer process

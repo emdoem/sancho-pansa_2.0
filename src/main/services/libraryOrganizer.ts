@@ -58,7 +58,9 @@ export class LibraryOrganizer {
     // Track used paths to avoid collisions
     const usedTargetPaths = new Map<string, string>(); // path -> original_file_id
 
-    // 1. Group by semantic identity (Artist + Title + Album + TrackNo)
+    // 1. Group by semantic identity (Artist + Title + Album)
+    // Track number is NOT used for grouping - only for naming
+    // This ensures we match the duplicate detection logic
     const semanticGroups = new Map<string, any[]>();
 
     for (const track of tracks) {
@@ -70,7 +72,6 @@ export class LibraryOrganizer {
       const artist = (track.artist || 'Unknown').trim();
       const title = (track.title || 'Unknown').trim();
       const album = (track.album_title || track.album || 'Unknown').trim();
-      const trackNo = track.track_no || '';
 
       // Strict rule: If Artist or Title is Unknown, treat as unique unless we have a hash match later
       if (
@@ -82,10 +83,10 @@ export class LibraryOrganizer {
         continue;
       }
 
-      // Group by Album Artist (if available) + Title + Album + TrackNo
-      // This helps group tracks with different "feat." artists into the same semantic group
+      // Group by Album Artist (if available) + Title + Album
+      // This matches the duplicate detection logic (no track number)
       const mainArtist = albumArtist || artist;
-      const key = `${mainArtist.toLowerCase()}|${title.toLowerCase()}|${album.toLowerCase()}|${trackNo}`;
+      const key = `${mainArtist.toLowerCase()}|${title.toLowerCase()}|${album.toLowerCase()}`;
       if (!semanticGroups.has(key)) semanticGroups.set(key, []);
       semanticGroups.get(key)!.push(track);
     }
@@ -148,6 +149,7 @@ export class LibraryOrganizer {
       }
 
       // --- HANDLE DUPLICATES ---
+      // Note: Track number differences don't prevent deletion - only audio quality matters
       for (const dup of duplicates) {
         actions.push({
           type: 'DELETE',
