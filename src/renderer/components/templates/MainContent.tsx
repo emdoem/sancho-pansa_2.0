@@ -305,15 +305,13 @@ export const MainContent = () => {
       )
     : [];
 
-  const totalSize = filteredTracks.reduce(
-    (acc, track) => acc + track.fileSize,
-    0
-  );
+  const totalSize = tracks
+    ? tracks.reduce((acc, track) => acc + track.fileSize, 0)
+    : 0;
 
-  const totalDuration = filteredTracks.reduce(
-    (acc, track) => acc + track.duration,
-    0
-  );
+  const totalDuration = tracks
+    ? tracks.reduce((acc, track) => acc + track.duration, 0)
+    : 0;
 
   return (
     <Stack
@@ -356,7 +354,7 @@ export const MainContent = () => {
           >
             <LibraryInfo
               isLibraryConfigured={isLibraryConfigured}
-              trackCount={filteredTracks.length}
+              trackCount={tracks?.length || 0}
               totalSize={formatFileSize(totalSize)}
               totalDuration={formatDuration(totalDuration)}
               onConfigure={handleConfigureMusicLibrary}
