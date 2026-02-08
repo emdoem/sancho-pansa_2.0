@@ -367,11 +367,15 @@ function setupIpcHandlers() {
       const db = new MusicLibraryDB(path.dirname(config.dbPath));
       const organizer = new LibraryOrganizer(db);
 
-      const result = await organizer.executePlan(plan, (progress) => {
-        if (window) {
-          window.webContents.send('organize-progress', progress);
+      const result = await organizer.executePlan(
+        plan,
+        config.musicRootPath,
+        (progress) => {
+          if (window) {
+            window.webContents.send('organize-progress', progress);
+          }
         }
-      });
+      );
 
       db.close();
 

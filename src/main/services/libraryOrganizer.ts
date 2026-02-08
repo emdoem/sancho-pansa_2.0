@@ -97,7 +97,6 @@ export class LibraryOrganizer {
         const track = groupTracks[0];
         const artist = (track.artist || 'Unknown').trim();
         const title = (track.title || 'Unknown').trim();
-        const album = (track.album_title || track.album || 'Unknown').trim();
 
         // Skip tracks without proper metadata for organization
         if (
@@ -263,6 +262,7 @@ export class LibraryOrganizer {
 
   public async executePlan(
     plan: OrganizePlan,
+    libraryRoot: string,
     onProgress?: (progress: {
       total: number;
       current: number;
@@ -353,6 +353,86 @@ export class LibraryOrganizer {
       }
     }
 
+    // Clean up empty directories
+    if (onProgress) {
+      onProgress({
+        total,
+        current: processed,
+        action: 'Cleaning up empty directories...',
+      });
+    }
+
+    try {
+      const cleanedDirs = await this.cleanupEmptyDirectories(libraryRoot);
+      if (cleanedDirs > 0 && onProgress) {
+        onProgress({
+          total,
+          current: processed,
+          action: `Removed ${cleanedDirs} empty directories`,
+        });
+      }
+    } catch (error: any) {
+      errors.push(`Directory cleanup failed: ${error.message}`);
+    }
+
     return { success: errors.length === 0, errors };
+  }
+
+  /**
+   * Recursively find and remove empty directories
+   * Returns the number of directories removed
+   */
+  private async cleanupEmptyDirectories(rootDir: string): Promise<number> {
+    let removedCount = 0;
+    const visited = new Set<string>();
+
+    const cleanDir = async (dirPath: string): Promise<number> => {
+      if (visited.has(dirPath)) return 0; // Avoid infinite loops with symlinks
+      visited.add(dirPath);
+
+      try {
+        const entries = await fs.readdir(dirPath, { withFileTypes: true });
+
+        if (entries.length === 0) {
+          await fs.rmdir(dirPath);
+          return 1;
+        }
+
+        let subDirs: string[] = [];
+
+        for (const entry of entries) {
+          if (entry.isDirectory()) {
+            subDirs.push(path.join(dirPath, entry.name));
+          }
+        }
+
+        // Process subdirectories first (bottom-up)
+        for (const subDir of subDirs) {
+          const subDirCleaned = await cleanDir(subDir);
+          removedCount += subDirCleaned;
+        }
+
+        // Check if current directory is now empty (after subdirs were cleaned)
+        try {
+          const newEntries = await fs.readdir(dirPath, { withFileTypes: true });
+          if (newEntries.length === 0) {
+            await fs.rmdir(dirPath);
+            return 1;
+          }
+        } catch (e: any) {
+          if (e.code !== 'ENOENT') throw e;
+        }
+
+        return 0;
+      } catch (e: any) {
+        if (e.code !== 'ENOENT') {
+          console.error(`Error cleaning dir ${dirPath}:`, e);
+        }
+        return 0;
+      }
+    };
+
+    await cleanDir(rootDir);
+    return removedCount;
   }
 }
