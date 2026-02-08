@@ -362,34 +362,39 @@ class MusicLibraryDB {
     totalTracks: number;
     uniqueTracks: number;
     duplicates: Array<{
+      file_hash: string;
       title: string;
       artist: string;
       album: string;
       count: number;
       trackIds: string[];
+      metadataCompleteness: number;
     }>;
   } {
     const totalTracks = this.db
       .prepare('SELECT COUNT(*) as count FROM tracks')
       .get() as { count: number };
 
-    const duplicates = this.db
+    // Query detailed track metadata for each duplicate group
+    const duplicateGroups = this.db
       .prepare(
         `
         SELECT
+          file_hash,
           title,
           COALESCE(album_artist, artist) as artist,
           album,
           COUNT(*) as count,
           GROUP_CONCAT(id, ',') as track_ids
         FROM tracks
-        WHERE title IS NOT NULL OR artist IS NOT NULL OR album IS NOT NULL
-        GROUP BY LOWER(title), LOWER(COALESCE(album_artist, artist)), LOWER(album)
+        WHERE file_hash IS NOT NULL
+        GROUP BY file_hash
         HAVING count > 1
         ORDER BY count DESC
       `
       )
       .all() as Array<{
+      file_hash: string;
       title: string | null;
       artist: string | null;
       album: string | null;
@@ -397,19 +402,59 @@ class MusicLibraryDB {
       track_ids: string;
     }>;
 
+    // For each group, get detailed tracks to calculate metadata completeness
+    const duplicates = duplicateGroups.map((group) => {
+      const trackIds = group.track_ids.split(',');
+      const placeholders = trackIds.map(() => '?').join(',');
+
+      const tracksInGroup = this.db
+        .prepare(
+          `SELECT id, title, artist, album_artist, album, track_no, tempo, length, bitrate, file_size, format 
+           FROM tracks WHERE id IN (${placeholders})`
+        )
+        .all(...trackIds) as Array<any>;
+
+      // Calculate metadata completeness for each track
+      const trackScores = tracksInGroup.map((track) => {
+        let score = 0;
+        if (track.title != null) score++;
+        if (track.artist != null) score++;
+        if (track.album_artist != null) score++;
+        if (track.album != null) score++;
+        if (track.track_no != null) score++;
+        if (track.tempo != null) score++;
+        if (track.length != null) score++;
+        if (track.bitrate != null) score++;
+        if (track.file_size != null) score++;
+        return { id: track.id, score };
+      });
+
+      // Use the track with highest metadata completeness score as the representative
+      const bestMetadata = tracksInGroup.reduce((best, track) => {
+        const trackScore =
+          trackScores.find((s) => s.id === track.id)?.score || 0;
+        const bestScore = trackScores.find((s) => s.id === best.id)?.score || 0;
+        return trackScore > bestScore ? track : best;
+      });
+
+      return {
+        file_hash: group.file_hash,
+        title: group.title || bestMetadata?.title || '',
+        artist: group.artist || bestMetadata?.artist || '',
+        album: group.album || bestMetadata?.album || '',
+        count: group.count,
+        trackIds: trackIds,
+        metadataCompleteness: Math.max(...trackScores.map((s) => s.score)),
+      };
+    });
+
     const uniqueTracks =
       totalTracks.count - duplicates.reduce((sum, d) => sum + d.count - 1, 0);
 
     return {
       totalTracks: totalTracks.count,
       uniqueTracks,
-      duplicates: duplicates.map((d) => ({
-        title: d.title || '',
-        artist: d.artist || '',
-        album: d.album || '',
-        count: d.count,
-        trackIds: d.track_ids.split(','),
-      })),
+      duplicates,
     };
   }
 

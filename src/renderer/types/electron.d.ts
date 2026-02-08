@@ -62,6 +62,8 @@ export interface DuplicateTrack {
   album: string;
   count: number;
   trackIds: string[];
+  file_hash: string;
+  metadataCompleteness: number;
 }
 
 export interface DetectDuplicatesResponse {

@@ -41,6 +41,21 @@ export class LibraryOrganizer {
     return score;
   }
 
+  private getMetadataCompletenessScore(track: any): number {
+    let score = 0;
+    if (track.title != null) score++;
+    if (track.artist != null) score++;
+    if (track.album_artist_name != null || track.album_artist != null) score++;
+    if (track.album_title != null || track.album != null) score++;
+    if (track.track_no != null) score++;
+    if (track.tempo != null) score++;
+    if (track.length != null) score++;
+    if (track.bitrate != null) score++;
+    if (track.file_size != null) score++;
+    if (track.format != null) score++;
+    return score;
+  }
+
   private sanitize(str: string): string {
     if (!str) return 'Unknown';
     // Remove invalid characters for file systems
@@ -58,48 +73,129 @@ export class LibraryOrganizer {
     // Track used paths to avoid collisions
     const usedTargetPaths = new Map<string, string>(); // path -> original_file_id
 
-    // 1. Group by semantic identity (Artist + Title + Album)
-    // Track number is NOT used for grouping - only for naming
-    // This ensures we match the duplicate detection logic
-    const semanticGroups = new Map<string, any[]>();
+    // 1. Group by file_hash (bit-identical files are the only true duplicates)
+    const hashGroups = new Map<string, any[]>();
 
     for (const track of tracks) {
-      const albumArtist = (
-        track.album_artist_name ||
-        track.album_artist ||
-        ''
-      ).trim();
-      const artist = (track.artist || 'Unknown').trim();
-      const title = (track.title || 'Unknown').trim();
-      const album = (track.album_title || track.album || 'Unknown').trim();
+      const file_hash = track.file_hash;
+      if (!file_hash) {
+        // No hash available - treat as unique
+        const key = `unique_${track.id}`;
+        hashGroups.set(key, [track]);
+        continue;
+      }
 
-      // Strict rule: If Artist or Title is Unknown, treat as unique unless we have a hash match later
+      const key = file_hash;
+      if (!hashGroups.has(key)) hashGroups.set(key, []);
+      hashGroups.get(key)!.push(track);
+    }
+
+    // 2. Process each hash group
+    for (const groupTracks of hashGroups.values()) {
+      if (groupTracks.length === 1) {
+        // Only one file with this hash - it's a unique file
+        const track = groupTracks[0];
+        const artist = (track.artist || 'Unknown').trim();
+        const title = (track.title || 'Unknown').trim();
+        const album = (track.album_title || track.album || 'Unknown').trim();
+
+        // Skip tracks without proper metadata for organization
+        if (
+          artist.toLowerCase() === 'unknown' ||
+          title.toLowerCase() === 'unknown'
+        ) {
+          actions.push({
+            type: 'KEEP',
+            sourcePath: track.file_path,
+            reason: 'Insufficient metadata for organization',
+            qualityInfo: `${track.format.toUpperCase()} ${track.bitrate}kbps`,
+          });
+          plan.stats.toKeep++;
+          continue;
+        }
+
+        // Determine target path for unique file
+        const artistFolder = this.sanitize(
+          track.album_artist_name || track.album_artist || track.artist
+        );
+        const albumFolder = this.sanitize(track.album_title || track.album);
+        const titleField = this.sanitize(track.title);
+        const trackNoStr = track.track_no
+          ? `${track.track_no.toString().padStart(2, '0')} - `
+          : '';
+        const ext = path.extname(track.file_path);
+
+        const targetDir = path.join(libraryRoot, artistFolder, albumFolder);
+        let targetFileName = `${trackNoStr}${titleField}${ext}`;
+        let targetPath = path.join(targetDir, targetFileName);
+
+        // Collision detection
+        let suffix = 1;
+        while (
+          usedTargetPaths.has(targetPath.toLowerCase()) &&
+          usedTargetPaths.get(targetPath.toLowerCase()) !== track.id
+        ) {
+          targetFileName = `${trackNoStr}${titleField} (${suffix})${ext}`;
+          targetPath = path.join(targetDir, targetFileName);
+          suffix++;
+        }
+        usedTargetPaths.set(targetPath.toLowerCase(), track.id);
+
+        if (path.normalize(track.file_path) !== path.normalize(targetPath)) {
+          actions.push({
+            type: 'MOVE',
+            sourcePath: track.file_path,
+            targetPath: targetPath,
+            reason: 'Standardizing folder structure and naming',
+            qualityInfo: `${track.format.toUpperCase()} ${track.bitrate}kbps`,
+          });
+          plan.stats.toMove++;
+        } else {
+          actions.push({
+            type: 'KEEP',
+            sourcePath: track.file_path,
+            reason: 'Already correctly named and placed',
+            qualityInfo: `${track.format.toUpperCase()} ${track.bitrate}kbps`,
+          });
+          plan.stats.toKeep++;
+        }
+
+        continue;
+      }
+
+      // Multiple files with same hash - these are duplicates
+      // Sort by metadata completeness first, then by quality
+      groupTracks.sort((a, b) => {
+        const completenessDiff =
+          this.getMetadataCompletenessScore(b) -
+          this.getMetadataCompletenessScore(a);
+        if (completenessDiff !== 0) return completenessDiff;
+        return this.getQualityScore(b) - this.getQualityScore(a);
+      });
+
+      const keeper = groupTracks[0];
+      const duplicates = groupTracks.slice(1);
+
+      // Check if keeper has sufficient metadata
+      const artist = (keeper.artist || 'Unknown').trim();
+      const title = (keeper.title || 'Unknown').trim();
+
       if (
         artist.toLowerCase() === 'unknown' ||
         title.toLowerCase() === 'unknown'
       ) {
-        const key = `unique_${track.id}`;
-        semanticGroups.set(key, [track]);
+        // Keeper doesn't have good metadata - keep all and mark separately
+        for (const track of groupTracks) {
+          actions.push({
+            type: 'KEEP',
+            sourcePath: track.file_path,
+            reason: 'Insufficient metadata, cannot determine duplicates',
+            qualityInfo: `${track.format.toUpperCase()} ${track.bitrate}kbps`,
+          });
+          plan.stats.toKeep++;
+        }
         continue;
       }
-
-      // Group by Album Artist (if available) + Title + Album
-      // This matches the duplicate detection logic (no track number)
-      const mainArtist = albumArtist || artist;
-      const key = `${mainArtist.toLowerCase()}|${title.toLowerCase()}|${album.toLowerCase()}`;
-      if (!semanticGroups.has(key)) semanticGroups.set(key, []);
-      semanticGroups.get(key)!.push(track);
-    }
-
-    // 2. Process each semantic group
-    for (const groupTracks of semanticGroups.values()) {
-      // Sort by quality score
-      groupTracks.sort(
-        (a, b) => this.getQualityScore(b) - this.getQualityScore(a)
-      );
-
-      const keeper = groupTracks[0];
-      const duplicates = groupTracks.slice(1);
 
       // --- HANDLE KEEPER ---
       // Use Album Artist from the normalized table for the folder structure
@@ -107,23 +203,23 @@ export class LibraryOrganizer {
         keeper.album_artist_name || keeper.album_artist || keeper.artist
       );
       const albumFolder = this.sanitize(keeper.album_title || keeper.album);
-      const title = this.sanitize(keeper.title);
+      const titleField = this.sanitize(keeper.title);
       const trackNoStr = keeper.track_no
         ? `${keeper.track_no.toString().padStart(2, '0')} - `
         : '';
       const ext = path.extname(keeper.file_path);
 
       const targetDir = path.join(libraryRoot, artistFolder, albumFolder);
-      let targetFileName = `${trackNoStr}${title}${ext}`;
+      let targetFileName = `${trackNoStr}${titleField}${ext}`;
       let targetPath = path.join(targetDir, targetFileName);
 
-      // Collision detection: If different songs end up with the same name
+      // Collision detection
       let suffix = 1;
       while (
         usedTargetPaths.has(targetPath.toLowerCase()) &&
         usedTargetPaths.get(targetPath.toLowerCase()) !== keeper.id
       ) {
-        targetFileName = `${trackNoStr}${title} (${suffix})${ext}`;
+        targetFileName = `${trackNoStr}${titleField} (${suffix})${ext}`;
         targetPath = path.join(targetDir, targetFileName);
         suffix++;
       }
@@ -149,12 +245,11 @@ export class LibraryOrganizer {
       }
 
       // --- HANDLE DUPLICATES ---
-      // Note: Track number differences don't prevent deletion - only audio quality matters
       for (const dup of duplicates) {
         actions.push({
           type: 'DELETE',
           sourcePath: dup.file_path,
-          reason: `Duplicate of higher quality version: ${keeper.format.toUpperCase()} ${keeper.bitrate}kbps`,
+          reason: `Duplicate (same hash). Keeper: ${keeper.format.toUpperCase()} ${keeper.bitrate}kbps, ${this.getMetadataCompletenessScore(keeper)}/10 fields populated`,
           qualityInfo: `${dup.format.toUpperCase()} ${dup.bitrate}kbps`,
         });
         plan.stats.toDelete++;

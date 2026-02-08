@@ -102,12 +102,16 @@ export const DuplicateResultModal = ({
                       {group.artist || 'Unknown Artist'} —{' '}
                       {group.album || 'Unknown Album'}
                     </Typography>
+                    <Typography level="body-xs" sx={{ mt: 0.3, opacity: 0.7 }}>
+                      Hash: {group.file_hash.slice(0, 12)}...
+                    </Typography>
                     <Typography
                       level="body-xs"
                       color="warning"
-                      sx={{ mt: 0.5 }}
+                      sx={{ mt: 0.2 }}
                     >
-                      Occurrences: {group.count}
+                      Occurrences: {group.count} | Metadata:{' '}
+                      {group.metadataCompleteness}/10 fields
                     </Typography>
                   </ListItemContent>
                 </ListItem>
