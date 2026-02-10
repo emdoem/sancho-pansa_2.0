@@ -17,14 +17,11 @@ import {
   handleGenerateOrganizePlan,
 } from '../../utils/apiHandlers';
 import { DuplicateResultModal, OrganizePlanModal } from '../molecules';
+import { useModalFormStore } from '../../stores/modalFormStore';
 import type {
   DetectDuplicatesResponse,
   OrganizePlan,
 } from '../../types/electron';
-
-interface QuickActionsProps {
-  onToggleBulkEdit: (enabled: boolean) => void;
-}
 
 interface SyncProgress {
   total: number;
@@ -32,7 +29,8 @@ interface SyncProgress {
   track: string;
 }
 
-export const QuickActions = ({ onToggleBulkEdit }: QuickActionsProps) => {
+export const QuickActions = () => {
+  const { toggleBulkEditMode } = useModalFormStore();
   const [isDuplicateModalOpen, setIsDuplicateModalOpen] = useState(false);
   const [duplicateResult, setDuplicateResult] = useState<
     DetectDuplicatesResponse['result'] | null
@@ -44,7 +42,6 @@ export const QuickActions = ({ onToggleBulkEdit }: QuickActionsProps) => {
   const [syncProgress, setSyncProgress] = useState<SyncProgress | null>(null);
 
   useEffect(() => {
-    // Listen for sync progress updates
     const cleanup = window.electronAPI.onSyncMetadataProgress(
       (progress: SyncProgress) => {
         setSyncProgress(progress);
@@ -123,7 +120,7 @@ export const QuickActions = ({ onToggleBulkEdit }: QuickActionsProps) => {
               label="Bulk Edit Tracks"
               icon={<EditIcon />}
               color="neutral"
-              onClick={() => onToggleBulkEdit(true)}
+              onClick={() => toggleBulkEditMode(true)}
               disabled={isSyncing}
             />
             <QuickActionButton

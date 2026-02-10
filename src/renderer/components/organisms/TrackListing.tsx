@@ -1,43 +1,49 @@
 import { Box, Stack, Typography, Button, Sheet } from '@mui/joy';
-import type { Track } from '../../../types/electron';
-import { EmptyState, LoadingState } from '../atoms';
-import { SearchInput } from '../atoms';
-import { TrackTable } from '../molecules';
-
-interface TrackListingProps {
-  tracks: Track[] | null;
-  isLoading: boolean;
-  searchQuery: string;
-  filteredTracks: Track[];
-  onSearchChange: (value: string) => void;
-  onEditTrack: (track: Track) => void;
-  getFileName: (filePath: string) => string;
-  formatDuration: (seconds: number) => string;
-  formatFileSize: (bytes: number) => string;
-  showCheckboxes?: boolean;
-  selectedTrackIds?: Set<string>;
-  onToggleSelect?: (trackId: string) => void;
-  onSelectAll?: () => void;
-  onBulkEdit?: () => void;
-}
-
-export const TrackListing = ({
-  tracks,
-  isLoading,
-  searchQuery,
-  filteredTracks,
-  onSearchChange,
-  onEditTrack,
-  getFileName,
+import { useMusicLibraryStore } from '../../stores/musicLibraryStore';
+import { useModalFormStore } from '../../stores/modalFormStore';
+import { useFilteredTracks } from '../../stores/musicLibraryStore';
+import { useSearchDebounce } from '../../stores/useSearchDebounce';
+import {
   formatDuration,
   formatFileSize,
-  showCheckboxes = false,
-  selectedTrackIds = new Set(),
-  onToggleSelect,
-  onSelectAll,
-  onBulkEdit,
-}: TrackListingProps) => {
-  const selectedCount = selectedTrackIds.size;
+  getFileName,
+} from '../../utils/formatting';
+import { EmptyState, LoadingState } from '../atoms';
+import { SearchInput } from '../atoms';
+import type { Track } from '../../types/electron';
+import { TrackTable } from '../molecules';
+
+export const TrackListing = () => {
+  const { tracks, isLoadingTracks, searchQuery, setSearchQuery } =
+    useMusicLibraryStore();
+  const {
+    openEditModal,
+    showCheckboxes,
+    selectedTrackIds,
+    toggleSelect,
+    selectAll,
+    openBulkEditModal,
+  } = useModalFormStore();
+
+  useSearchDebounce();
+  const filteredTracks = useFilteredTracks();
+  const selectedCount = selectedTrackIds?.length ?? 0;
+
+  const handleEditTrack = (track: Track) => {
+    openEditModal(track);
+  };
+
+  const handleToggleSelect = (trackId: string) => {
+    toggleSelect(trackId);
+  };
+
+  const handleSelectAll = () => {
+    selectAll();
+  };
+
+  const handleBulkEdit = () => {
+    openBulkEditModal();
+  };
 
   return (
     <Box
@@ -58,7 +64,7 @@ export const TrackListing = ({
         <Typography level="title-lg" sx={{ fontWeight: 600 }}>
           Track Listing ({filteredTracks.length})
         </Typography>
-        <SearchInput value={searchQuery} onChange={onSearchChange} />
+        <SearchInput value={searchQuery} onChange={setSearchQuery} />
       </Stack>
 
       {showCheckboxes && selectedCount > 0 && (
@@ -77,27 +83,27 @@ export const TrackListing = ({
           <Typography level="body-md" sx={{ fontWeight: 600 }}>
             {selectedCount} track{selectedCount !== 1 ? 's' : ''} selected
           </Typography>
-          <Button onClick={onBulkEdit} size="sm">
+          <Button onClick={handleBulkEdit} size="sm">
             Bulk Edit
           </Button>
         </Sheet>
       )}
 
-      {tracks === null || isLoading ? (
+      {tracks === null || isLoadingTracks ? (
         <LoadingState />
       ) : filteredTracks.length === 0 ? (
         <EmptyState hasSearch={!!searchQuery} />
       ) : (
         <TrackTable
           tracks={filteredTracks}
-          onEditTrack={onEditTrack}
+          onEditTrack={handleEditTrack}
           getFileName={getFileName}
           formatDuration={formatDuration}
           formatFileSize={formatFileSize}
           showCheckboxes={showCheckboxes}
-          selectedTrackIds={selectedTrackIds}
-          onToggleSelect={onToggleSelect}
-          onSelectAll={onSelectAll}
+          selectedTrackIds={new Set(selectedTrackIds ?? [])}
+          onToggleSelect={handleToggleSelect}
+          onSelectAll={handleSelectAll}
         />
       )}
     </Box>
