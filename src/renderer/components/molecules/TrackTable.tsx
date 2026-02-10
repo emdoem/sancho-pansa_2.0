@@ -1,7 +1,7 @@
 import { Box } from '@mui/joy';
 import { useRef } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import type { Track } from '../../../types/electron';
+import type { Track } from '../../types/electron';
 import { TrackTableHeader, TrackRow } from '../atoms';
 
 interface TrackTableProps {

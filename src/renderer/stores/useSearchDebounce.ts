@@ -3,7 +3,7 @@ import { useMusicLibraryStore } from './musicLibraryStore';
 
 export const useSearchDebounce = (delay = 300) => {
   const { searchQuery, setDebouncedSearchQuery } = useMusicLibraryStore();
-  const timeoutRef = useRef<NodeJS.Timeout>();
+  const timeoutRef = useRef<NodeJS.Timeout>(undefined);
 
   useEffect(() => {
     clearTimeout(timeoutRef.current);

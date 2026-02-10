@@ -23,6 +23,7 @@ export const TrackListing = () => {
     toggleSelect,
     selectAll,
     openBulkEditModal,
+    toggleBulkEditMode,
   } = useModalFormStore();
 
   useSearchDebounce();
@@ -43,6 +44,10 @@ export const TrackListing = () => {
 
   const handleBulkEdit = () => {
     openBulkEditModal();
+  };
+
+  const handleCancelBulkEdit = () => {
+    toggleBulkEditMode(false);
   };
 
   return (
@@ -67,7 +72,7 @@ export const TrackListing = () => {
         <SearchInput value={searchQuery} onChange={setSearchQuery} />
       </Stack>
 
-      {showCheckboxes && selectedCount > 0 && (
+      {showCheckboxes && (
         <Sheet
           variant="soft"
           color="primary"
@@ -83,9 +88,16 @@ export const TrackListing = () => {
           <Typography level="body-md" sx={{ fontWeight: 600 }}>
             {selectedCount} track{selectedCount !== 1 ? 's' : ''} selected
           </Typography>
-          <Button onClick={handleBulkEdit} size="sm">
-            Bulk Edit
-          </Button>
+          <Stack direction="row" gap={2}>
+            <Button onClick={handleCancelBulkEdit} size="sm" color="danger">
+              Cancel
+            </Button>
+            {selectedCount > 0 && (
+              <Button onClick={handleBulkEdit} size="sm">
+                Bulk Edit
+              </Button>
+            )}
+          </Stack>
         </Sheet>
       )}
 

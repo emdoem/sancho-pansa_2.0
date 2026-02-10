@@ -30,7 +30,7 @@ interface SyncProgress {
 }
 
 export const QuickActions = () => {
-  const { toggleBulkEditMode } = useModalFormStore();
+  const { toggleBulkEditMode, showCheckboxes } = useModalFormStore();
   const [isDuplicateModalOpen, setIsDuplicateModalOpen] = useState(false);
   const [duplicateResult, setDuplicateResult] = useState<
     DetectDuplicatesResponse['result'] | null
@@ -114,21 +114,21 @@ export const QuickActions = () => {
               icon={<SearchIcon />}
               color="primary"
               onClick={onScanDuplicates}
-              disabled={isLoading || isSyncing}
+              disabled={isLoading || isSyncing || showCheckboxes}
             />
             <QuickActionButton
               label="Bulk Edit Tracks"
               icon={<EditIcon />}
               color="neutral"
               onClick={() => toggleBulkEditMode(true)}
-              disabled={isSyncing}
+              disabled={isSyncing || showCheckboxes}
             />
             <QuickActionButton
               label={isSyncing ? 'Syncing...' : 'Sync Metadata'}
               icon={<SyncIcon />}
               color="neutral"
               onClick={onSyncMetadata}
-              disabled={isLoading || isSyncing}
+              disabled={isLoading || isSyncing || showCheckboxes}
             />
           </Stack>
           {isSyncing && syncProgress && (
