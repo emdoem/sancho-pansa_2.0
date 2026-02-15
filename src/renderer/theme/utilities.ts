@@ -77,8 +77,6 @@ export const mixins = {
     },
   }),
 
-  // Table cells with minWidth: 0 to prevent flex overflow
-  // This is critical for tables with fixed-width flex items
   tableCell: (align: 'left' | 'center' | 'right' = 'left') => ({
     padding: '12px',
     overflow: 'hidden',
@@ -90,6 +88,12 @@ export const mixins = {
         : align === 'right'
           ? 'flex-end'
           : 'flex-start',
+  }),
+
+  tableCellContent: () => ({
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
   }),
 
   tableHeaderCell: (align: 'left' | 'center' | 'right' = 'left') => ({

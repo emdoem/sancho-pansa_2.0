@@ -1,4 +1,4 @@
-import { Box, Checkbox } from '@mui/joy';
+import { Box, Checkbox, Tooltip } from '@mui/joy';
 import { useRef } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import type { Track } from '../../types/electron';
@@ -25,6 +25,20 @@ interface TrackTableProps {
   columns: Column<Track>[];
   tableConfig: TableConfig;
 }
+
+interface TableCellProps {
+  children: React.ReactNode;
+}
+
+const TableCell = ({ children }: TableCellProps) => {
+  const textContent = typeof children === 'string' ? children : '';
+
+  return (
+    <Tooltip title={textContent} sx={{ maxWidth: 500 }}>
+      <Box sx={mixins.tableCellContent()}>{children}</Box>
+    </Tooltip>
+  );
+};
 
 export const TrackTable = ({
   tracks,
@@ -79,7 +93,7 @@ export const TrackTable = ({
               ...mixins.tableHeaderCell(column.align),
             }}
           >
-            {column.label}
+            <TableCell>{column.label}</TableCell>
           </Box>
         ))}
       </Box>
@@ -131,7 +145,9 @@ export const TrackTable = ({
                     ...mixins.tableCell(column.align),
                   }}
                 >
-                  {column.render?.(tracks[virtualRow.index])}
+                  <TableCell>
+                    {column.render?.(tracks[virtualRow.index])}
+                  </TableCell>
                 </Box>
               ))}
             </Box>

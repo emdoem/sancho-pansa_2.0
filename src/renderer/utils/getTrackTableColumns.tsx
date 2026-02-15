@@ -27,8 +27,7 @@ export const getTrackTableColumns = (
     render: (track) => (
       <Typography
         level="body-sm"
-        sx={{ '& .MuiTypography-root': { color: 'inherit' } }}
-        color="text.secondary"
+        sx={{ '& .MuiTypography-root': { color: 'text.secondary' } }}
       >
         {track.artist}
       </Typography>
@@ -48,7 +47,7 @@ export const getTrackTableColumns = (
   {
     key: 'fileName',
     label: 'File Name',
-    width: showCheckboxes ? '18%' : '20%',
+    width: showCheckboxes ? '16%' : '18%',
     align: 'left',
     render: (track) => (
       <Typography level="body-sm" sx={{ color: 'text.secondary' }}>
@@ -59,7 +58,7 @@ export const getTrackTableColumns = (
   {
     key: 'bpm',
     label: 'BPM',
-    width: '5%',
+    width: '7%',
     align: 'center',
     render: (track) => (
       <Typography level="body-sm" sx={{ color: 'text.secondary' }}>
@@ -69,7 +68,7 @@ export const getTrackTableColumns = (
   },
   {
     key: 'duration',
-    label: 'Duration',
+    label: 'Length',
     width: '8%',
     align: 'right',
     render: (track) => (
@@ -91,7 +90,7 @@ export const getTrackTableColumns = (
   },
   {
     key: 'actions',
-    label: 'Actions',
+    label: ' ',
     width: '5%',
     align: 'center',
     render: (track) => (
