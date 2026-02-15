@@ -1,9 +1,13 @@
 import { Stack } from '@mui/joy';
 import { PlaybackButton, ProgressSlider } from '../atoms';
+import { mixins } from '../../theme/utilities';
 
 export const PlaybackControls = () => (
-  <Stack direction="column" alignItems="center" sx={{ width: '40%' }}>
-    <Stack direction="row" alignItems="center" gap={2} sx={{ mb: 1 }}>
+  <Stack
+    direction="column"
+    sx={{ width: '40%', ...mixins.flexCenterVertical() }}
+  >
+    <Stack sx={{ gap: 2, mb: 1, ...mixins.flexCenter() }}>
       <PlaybackButton buttonType="shuffle" />
       <PlaybackButton buttonType="previous" />
       <PlaybackButton buttonType="play" />

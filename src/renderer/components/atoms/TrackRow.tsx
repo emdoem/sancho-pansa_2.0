@@ -1,6 +1,7 @@
 import { Box, Typography, IconButton, Checkbox } from '@mui/joy';
 import EditIcon from '@mui/icons-material/Edit';
 import type { Track } from '../../../types/electron';
+import { mixins, layoutTokens } from '../../theme/utilities';
 
 interface TrackRowProps {
   track: Track;
@@ -25,27 +26,13 @@ export const TrackRow = ({
 }: TrackRowProps) => (
   <Box
     sx={{
-      display: 'flex',
-      alignItems: 'center',
       width: '100%',
-      height: '52px',
-      borderBottom: '1px solid',
-      borderColor: 'divider',
-      overflow: 'hidden',
-      '&:hover': {
-        backgroundColor: 'rgba(76, 175, 80, 0.08)',
-      },
+      height: layoutTokens.tableRowHeight,
+      ...mixins.tableRowHover(),
     }}
   >
     {showCheckbox && (
-      <Box
-        sx={{
-          flex: '0 0 5%',
-          padding: '12px',
-          textAlign: 'center',
-          overflow: 'hidden',
-        }}
-      >
+      <Box sx={mixins.tableCheckboxCell()}>
         <Checkbox
           checked={isSelected}
           onChange={() => onToggleSelect?.(track.id)}
@@ -56,8 +43,7 @@ export const TrackRow = ({
     <Box
       sx={{
         flex: showCheckbox ? '0 0 22%' : '0 0 25%',
-        padding: '12px',
-        overflow: 'hidden',
+        ...mixins.tableCell(),
       }}
     >
       <Typography level="body-md" sx={{ fontWeight: 500 }}>
@@ -67,8 +53,7 @@ export const TrackRow = ({
     <Box
       sx={{
         flex: showCheckbox ? '0 0 13%' : '0 0 15%',
-        padding: '12px',
-        overflow: 'hidden',
+        ...mixins.tableCell(),
       }}
     >
       <Typography level="body-sm" sx={{ color: 'text.secondary' }}>
@@ -78,8 +63,7 @@ export const TrackRow = ({
     <Box
       sx={{
         flex: showCheckbox ? '0 0 13%' : '0 0 15%',
-        padding: '12px',
-        overflow: 'hidden',
+        ...mixins.tableCell(),
       }}
     >
       <Typography level="body-sm" sx={{ color: 'text.secondary' }}>
@@ -89,8 +73,7 @@ export const TrackRow = ({
     <Box
       sx={{
         flex: showCheckbox ? '0 0 18%' : '0 0 20%',
-        padding: '12px',
-        overflow: 'hidden',
+        ...mixins.tableCell(),
       }}
     >
       <Typography level="body-sm" sx={{ color: 'text.secondary' }}>
@@ -100,9 +83,7 @@ export const TrackRow = ({
     <Box
       sx={{
         flex: '0 0 5%',
-        padding: '12px',
-        textAlign: 'center',
-        overflow: 'hidden',
+        ...mixins.tableCell(),
       }}
     >
       <Typography level="body-sm" sx={{ color: 'text.secondary' }}>
@@ -112,9 +93,7 @@ export const TrackRow = ({
     <Box
       sx={{
         flex: '0 0 8%',
-        padding: '12px',
-        textAlign: 'right',
-        overflow: 'hidden',
+        ...mixins.tableCell('right'),
       }}
     >
       <Typography level="body-sm" sx={{ color: 'text.secondary' }}>
@@ -124,9 +103,7 @@ export const TrackRow = ({
     <Box
       sx={{
         flex: '0 0 7%',
-        padding: '12px',
-        textAlign: 'right',
-        overflow: 'hidden',
+        ...mixins.tableCell('right'),
       }}
     >
       <Typography level="body-sm" sx={{ color: 'text.secondary' }}>
@@ -136,9 +113,7 @@ export const TrackRow = ({
     <Box
       sx={{
         flex: '0 0 5%',
-        padding: '12px',
-        textAlign: 'center',
-        overflow: 'hidden',
+        ...mixins.tableCell(),
       }}
     >
       <IconButton size="sm" onClick={() => onEdit(track)}>

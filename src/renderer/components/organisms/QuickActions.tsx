@@ -112,7 +112,7 @@ export const QuickActions = () => {
             <QuickActionButton
               label={isLoading ? 'Loading...' : 'Scan for Duplicates'}
               icon={<SearchIcon />}
-              color="primary"
+              color="neutral"
               onClick={onScanDuplicates}
               disabled={isLoading || isSyncing || showCheckboxes}
             />

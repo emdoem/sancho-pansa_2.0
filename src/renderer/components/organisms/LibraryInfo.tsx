@@ -19,9 +19,7 @@ export const LibraryInfo = () => {
   return (
     <Accordion defaultExpanded>
       <AccordionSummary indicator={<ExpandMoreIcon />}>
-        <Typography level="title-lg" sx={{ fontWeight: 600 }}>
-          Library Info
-        </Typography>
+        <Typography level="title-lg">Library Info</Typography>
       </AccordionSummary>
       <AccordionDetails>
         {!isLibraryConfigured ? (

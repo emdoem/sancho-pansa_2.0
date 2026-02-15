@@ -6,7 +6,7 @@ import type { Track } from '../types/electron';
 
 export const getTrackTableColumns = (
   showCheckboxes: boolean,
-  onEditTrack: (track: Track) => void,
+  onEditTrack: (track: Track) => void
 ): Column<Track>[] => [
   {
     key: 'title',
@@ -25,7 +25,11 @@ export const getTrackTableColumns = (
     width: showCheckboxes ? '13%' : '15%',
     align: 'left',
     render: (track) => (
-      <Typography level="body-sm" sx={{ color: 'text.secondary' }}>
+      <Typography
+        level="body-sm"
+        sx={{ '& .MuiTypography-root': { color: 'inherit' } }}
+        color="text.secondary"
+      >
         {track.artist}
       </Typography>
     ),
@@ -37,7 +41,7 @@ export const getTrackTableColumns = (
     align: 'left',
     render: (track) => (
       <Typography level="body-sm" sx={{ color: 'text.secondary' }}>
-        {track.album}
+        {track.artist}
       </Typography>
     ),
   },

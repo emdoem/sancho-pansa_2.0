@@ -2,6 +2,7 @@ import { Input, IconButton } from '@mui/joy';
 import SearchIcon from '@mui/icons-material/Search';
 import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
 import type { SxProps } from '@mui/joy/styles/types';
+import { layoutTokens } from '../../theme/utilities';
 
 interface SearchInputProps {
   value: string;
@@ -34,6 +35,6 @@ export const SearchInput = ({
         </IconButton>
       )
     }
-    sx={{ width: 300, ...sx }}
+    sx={{ width: layoutTokens.searchInputWidth, ...sx }}
   />
 );

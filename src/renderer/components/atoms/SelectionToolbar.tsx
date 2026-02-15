@@ -1,4 +1,5 @@
 import { Stack, Typography, Button, Sheet } from '@mui/joy';
+import { mixins } from '../../theme/utilities';
 
 interface SelectionToolbarProps {
   selectedCount: number;
@@ -18,12 +19,11 @@ export const SelectionToolbar = ({
       p: 2,
       mb: 2,
       borderRadius: 'sm',
-      display: 'flex',
+      ...mixins.flexCenter(),
       justifyContent: 'space-between',
-      alignItems: 'center',
     }}
   >
-    <Typography level="body-md" sx={{ fontWeight: 600 }}>
+    <Typography level="body-md">
       {selectedCount} track{selectedCount !== 1 ? 's' : ''} selected
     </Typography>
     <Stack direction="row" gap={2}>

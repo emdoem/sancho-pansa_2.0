@@ -1,4 +1,5 @@
 import { Slider, type SliderProps, Stack, Typography } from '@mui/joy';
+import { mixins } from '../../theme/utilities';
 
 interface ProgressSliderProps extends Omit<SliderProps, 'children'> {
   currentTime?: string;
@@ -10,7 +11,7 @@ export const ProgressSlider = ({
   totalTime = '0:00',
   ...props
 }: ProgressSliderProps) => (
-  <Stack direction="row" alignItems="center" sx={{ width: '100%', gap: 2 }}>
+  <Stack sx={{ width: '100%', gap: 2, ...mixins.flexCenter() }}>
     <Typography level="body-xs" sx={{ minWidth: 40, textAlign: 'right' }}>
       {currentTime}
     </Typography>

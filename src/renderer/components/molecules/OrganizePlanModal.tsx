@@ -18,6 +18,7 @@ import {
 } from '@mui/joy';
 import { SearchInput } from '../atoms';
 import type { OrganizePlan, OrganizeProgress } from '../../types/electron';
+import { modalSizes } from '../../theme/utilities';
 import { handleExecuteOrganizePlan } from '../../utils/apiHandlers';
 
 interface OrganizePlanModalProps {
@@ -108,7 +109,7 @@ export const OrganizePlanModal = ({
 
   return (
     <Modal open={isOpen} onClose={!isExecuting ? onClose : undefined}>
-      <ModalDialog sx={{ minWidth: 700, maxWidth: '90vw', maxHeight: '85vh' }}>
+      <ModalDialog sx={modalSizes.large}>
         <DialogTitle>Library Reorganization Plan</DialogTitle>
         <DialogContent sx={{ overflow: 'auto', mt: 2 }}>
           <Stack gap={3}>

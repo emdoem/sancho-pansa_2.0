@@ -2,6 +2,7 @@ import { Box, Checkbox } from '@mui/joy';
 import { useRef } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import type { Track } from '../../types/electron';
+import { mixins, layoutTokens } from '../../theme/utilities';
 
 export interface Column<T> {
   key: string;
@@ -35,34 +36,21 @@ export const TrackTable = ({
   const rowVirtualizer = useVirtualizer({
     count: tracks.length,
     getScrollElement: () => parentRef.current,
-    estimateSize: () => 52,
+    estimateSize: () => layoutTokens.tableRowHeight,
     overscan: 10,
   });
 
   const items = rowVirtualizer.getVirtualItems();
 
-  const getWidthAlign = (align: 'left' | 'center' | 'right' = 'left') => {
-    return {
-      alignItems: 'center',
-      justifyContent:
-        align === 'center'
-          ? 'center'
-          : align === 'right'
-            ? 'flex-end'
-            : 'flex-start',
-    };
-  };
-
   return (
     <Box
       sx={{
-        border: '1px solid',
-        borderColor: 'divider',
         borderRadius: 2,
         overflow: 'hidden',
         height: '650px',
         display: 'flex',
         flexDirection: 'column',
+        ...mixins.borderDefault(),
       }}
     >
       <Box
@@ -75,17 +63,7 @@ export const TrackTable = ({
         }}
       >
         {tableConfig.showCheckboxes && (
-          <Box
-            sx={{
-              flex: '0 0 5%',
-              padding: '12px',
-              fontWeight: 600,
-              color: 'text.primary',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
+          <Box sx={mixins.tableCheckboxCell()}>
             <Checkbox
               checked={tableConfig.isAllSelected}
               onChange={tableConfig.onSelectAll}
@@ -98,10 +76,7 @@ export const TrackTable = ({
             key={column.key}
             sx={{
               flex: `0 0 ${column.width}`,
-              padding: '12px',
-              fontWeight: 600,
-              color: 'text.primary',
-              ...getWidthAlign(column.align),
+              ...mixins.tableHeaderCell(column.align),
             }}
           >
             {column.label}
@@ -132,24 +107,11 @@ export const TrackTable = ({
                 width: '100%',
                 height: `${virtualRow.size}px`,
                 transform: `translateY(${virtualRow.start}px)`,
-                display: 'flex',
-                alignItems: 'center',
-                borderBottom: '1px solid',
-                borderColor: 'divider',
-                '&:hover': {
-                  backgroundColor: 'rgba(76, 175, 80, 0.08)',
-                },
+                ...mixins.tableRowHover(),
               }}
             >
               {tableConfig.showCheckboxes && (
-                <Box
-                  sx={{
-                    flex: '0 0 5%',
-                    padding: '12px',
-                    display: 'flex',
-                    justifyContent: 'center',
-                  }}
-                >
+                <Box sx={mixins.tableCheckboxCell()}>
                   <Checkbox
                     checked={tableConfig.selectedTrackIds.has(
                       tracks[virtualRow.index].id
@@ -166,8 +128,7 @@ export const TrackTable = ({
                   key={column.key}
                   sx={{
                     flex: `0 0 ${column.width}`,
-                    padding: '12px',
-                    ...getWidthAlign(column.align),
+                    ...mixins.tableCell(column.align),
                   }}
                 >
                   {column.render?.(tracks[virtualRow.index])}

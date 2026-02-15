@@ -11,6 +11,7 @@ import {
   Input,
 } from '@mui/joy';
 import { trackEditFormFields } from './TrackEditModal.consts';
+import { modalSizes } from '../../theme/utilities';
 
 interface TrackEditModalProps {
   isOpen: boolean;
@@ -40,7 +41,7 @@ export const TrackEditModal = ({
   onSave,
 }: TrackEditModalProps) => (
   <Modal open={isOpen} onClose={onClose}>
-    <ModalDialog sx={{ minWidth: 400 }}>
+    <ModalDialog sx={modalSizes.small}>
       <DialogTitle>Edit Track</DialogTitle>
       <DialogContent>
         <Stack direction="column" gap={2}>
@@ -58,7 +59,7 @@ export const TrackEditModal = ({
                 placeholder={field.placeholder}
               />
             </FormControl>
-          ))}          
+          ))}
         </Stack>
       </DialogContent>
       <DialogActions>

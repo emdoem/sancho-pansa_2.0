@@ -1,5 +1,6 @@
 import { Box, Stack, Typography } from '@mui/joy';
 import { useMemo } from 'react';
+import { mixins } from '../../theme/utilities';
 import { useMusicLibraryStore } from '../../stores/musicLibraryStore';
 import { useModalFormStore } from '../../stores/modalFormStore';
 import { useFilteredTracks } from '../../stores/musicLibraryStore';
@@ -52,10 +53,7 @@ export const TrackListing = () => {
   return (
     <Box
       sx={{
-        backgroundColor: 'background.level1',
-        border: '1px solid',
-        borderColor: 'divider',
-        borderRadius: 2,
+        ...mixins.cardContainer(),
         padding: 3,
       }}
     >
@@ -65,7 +63,7 @@ export const TrackListing = () => {
         alignItems="center"
         sx={{ mb: 2 }}
       >
-        <Typography level="title-lg" sx={{ fontWeight: 600 }}>
+        <Typography level="title-lg">
           Track Listing ({filteredTracks.length})
         </Typography>
         <SearchInput value={searchQuery} onChange={setSearchQuery} />

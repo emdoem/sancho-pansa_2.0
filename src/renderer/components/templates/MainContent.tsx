@@ -5,6 +5,7 @@ import { useModalFormStore } from '../../stores/modalFormStore';
 import { ConfigMessage } from '../atoms';
 import { TrackEditModal, BulkEditModal } from '../molecules';
 import { LibraryInfo, QuickActions, TrackListing } from '../organisms';
+import { mixins } from '../../theme/utilities';
 
 export const MainContent = () => {
   const { initializeLibrary, configMessage } = useMusicLibraryStore();
@@ -44,7 +45,7 @@ export const MainContent = () => {
         }}
         alignItems="stretch"
       >
-        <Typography level="h2" sx={{ mb: 2, fontWeight: 600 }}>
+        <Typography level="h2" sx={{ mb: 2 }}>
           Music Library
         </Typography>
 
@@ -56,10 +57,7 @@ export const MainContent = () => {
           <AccordionGroup
             sx={{
               '& .MuiAccordion-root': {
-                backgroundColor: 'background.level1',
-                border: '1px solid',
-                borderColor: 'divider',
-                borderRadius: 2,
+                ...mixins.cardContainer(),
               },
             }}
           >

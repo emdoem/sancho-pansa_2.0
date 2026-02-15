@@ -60,11 +60,8 @@ const theme = extendTheme({
             },
           }),
           ...(ownerState.variant === 'soft' && {
-            backgroundColor: 'rgba(76, 175, 80, 0.15)',
-            color: theme.vars.palette.primary[400],
-            '&:hover': {
-              backgroundColor: 'rgba(76, 175, 80, 0.25)',
-            },
+            backgroundColor: 'rgba(76, 175, 80, 0.12)',
+            color: theme.vars.palette.primary[300],
           }),
           ...(ownerState.variant === 'outlined' && {
             borderColor: theme.vars.palette.primary[500],
@@ -82,7 +79,7 @@ const theme = extendTheme({
         root: ({ theme }) => ({
           color: theme.vars.palette.text.secondary,
           '&:hover': {
-            backgroundColor: 'rgba(76, 175, 80, 0.15)',
+            backgroundColor: 'rgba(76, 175, 80, 0.12)',
             color: theme.vars.palette.primary[400],
           },
         }),

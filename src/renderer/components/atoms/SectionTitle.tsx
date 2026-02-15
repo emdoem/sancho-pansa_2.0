@@ -9,7 +9,7 @@ export const SectionTitle = ({
   level = 'title-lg',
   children,
 }: SectionTitleProps) => (
-  <Typography level={level} sx={{ mb: 2, fontWeight: 600 }}>
+  <Typography level={level} sx={{ mb: 2 }}>
     {children}
   </Typography>
 );

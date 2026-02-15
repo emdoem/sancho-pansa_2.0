@@ -1,5 +1,6 @@
 import { Slider, Stack } from '@mui/joy';
 import VolumeUpIcon from '@mui/icons-material/VolumeUp';
+import { mixins } from '../../theme/utilities';
 
 interface VolumeSliderProps {
   defaultValue?: number;
@@ -10,7 +11,7 @@ export const VolumeSlider = ({
   defaultValue = 80,
   onChange,
 }: VolumeSliderProps) => (
-  <Stack direction="row" alignItems="center" sx={{ gap: 2 }}>
+  <Stack sx={{ gap: 2, ...mixins.flexCenter() }}>
     <VolumeUpIcon sx={{ color: 'text.secondary' }} />
     <Slider
       size="sm"

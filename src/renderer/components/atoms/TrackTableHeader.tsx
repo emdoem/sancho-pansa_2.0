@@ -1,4 +1,5 @@
 import { Box, Checkbox } from '@mui/joy';
+import { mixins } from '../../theme/utilities';
 
 interface TrackTableHeaderProps {
   label?: string;
@@ -16,28 +17,25 @@ export const TrackTableHeader = ({
   showCheckbox = false,
   isAllSelected = false,
   onSelectAll,
-}: TrackTableHeaderProps) => (
-  <Box
-    sx={{
-      flex: `0 0 ${flex}`,
-      padding: '12px',
-      fontWeight: 600,
-      color: 'text.primary',
-      textAlign,
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent:
-        textAlign === 'center'
-          ? 'center'
-          : textAlign === 'right'
-            ? 'flex-end'
-            : 'flex-start',
-    }}
-  >
-    {showCheckbox ? (
-      <Checkbox checked={isAllSelected} onChange={onSelectAll} size="sm" />
-    ) : (
-      label
-    )}
-  </Box>
-);
+}: TrackTableHeaderProps) => {
+  const align =
+    textAlign === 'right'
+      ? 'right'
+      : textAlign === 'center'
+        ? 'center'
+        : 'left';
+  return (
+    <Box
+      sx={{
+        flex: `0 0 ${flex}`,
+        ...mixins.tableHeaderCell(align),
+      }}
+    >
+      {showCheckbox ? (
+        <Checkbox checked={isAllSelected} onChange={onSelectAll} size="sm" />
+      ) : (
+        label
+      )}
+    </Box>
+  );
+};

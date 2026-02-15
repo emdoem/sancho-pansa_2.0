@@ -10,9 +10,7 @@ export const TrackInfo = ({
   artist = 'Select a track to play',
 }: TrackInfoProps) => (
   <Stack direction="column">
-    <Typography level="body-md" sx={{ fontWeight: 600 }}>
-      {title}
-    </Typography>
+    <Typography level="title-sm">{title}</Typography>
     <Typography level="body-sm" sx={{ color: 'text.tertiary' }}>
       {artist}
     </Typography>

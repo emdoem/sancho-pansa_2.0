@@ -12,6 +12,7 @@ import {
   Typography,
 } from '@mui/joy';
 import { bulkEditFormFields } from './BulkEditModal.consts';
+import { modalSizes } from '../../theme/utilities';
 
 interface BulkEditModalProps {
   isOpen: boolean;
@@ -39,7 +40,7 @@ export const BulkEditModal = ({
   onSave,
 }: BulkEditModalProps) => (
   <Modal open={isOpen} onClose={onClose}>
-    <ModalDialog sx={{ minWidth: 400 }}>
+    <ModalDialog sx={modalSizes.small}>
       <DialogTitle>Bulk Edit Tracks</DialogTitle>
       <DialogContent>
         <Stack direction="column" gap={2}>

@@ -3,6 +3,7 @@ import { TopBar, LeftSidebar, BottomBar } from './components/organisms';
 import { MainContent } from './components/templates';
 
 function App() {
+  const displayPlayer = false; // Placeholder for player display logic
   return (
     <Stack
       direction="column"
@@ -24,7 +25,7 @@ function App() {
         <LeftSidebar />
         <MainContent />
       </Stack>
-      <BottomBar />
+      {displayPlayer && <BottomBar />}
     </Stack>
   );
 }

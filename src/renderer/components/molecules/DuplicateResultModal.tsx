@@ -16,6 +16,7 @@ import {
 import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
 import { SearchInput } from '../atoms';
 import type { DetectDuplicatesResponse } from '../../../types/electron';
+import { modalSizes } from '../../theme/utilities';
 
 interface DuplicateResultModalProps {
   isOpen: boolean;
@@ -51,14 +52,7 @@ export const DuplicateResultModal = ({
 
   return (
     <Modal open={isOpen} onClose={onClose}>
-      <ModalDialog
-        sx={{
-          minWidth: 500,
-          maxWidth: '80vw',
-          maxHeight: '80vh',
-          overflow: 'auto',
-        }}
-      >
+      <ModalDialog sx={modalSizes.medium}>
         <DialogTitle>Duplicate Detection Results</DialogTitle>
         <DialogContent>
           <Stack gap={2}>
