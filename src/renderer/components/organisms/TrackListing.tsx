@@ -1,16 +1,12 @@
 import { Box, Stack, Typography, Button, Sheet } from '@mui/joy';
+import { useMemo } from 'react';
 import { useMusicLibraryStore } from '../../stores/musicLibraryStore';
 import { useModalFormStore } from '../../stores/modalFormStore';
 import { useFilteredTracks } from '../../stores/musicLibraryStore';
 import { useSearchDebounce } from '../../stores/useSearchDebounce';
-import {
-  formatDuration,
-  formatFileSize,
-  getFileName,
-} from '../../utils/formatting';
+import { getTrackTableColumns } from '../../utils/getTrackTableColumns';
 import { EmptyState, LoadingState } from '../atoms';
 import { SearchInput } from '../atoms';
-import type { Track } from '../../types/electron';
 import { TrackTable } from '../molecules';
 
 export const TrackListing = () => {
@@ -30,17 +26,20 @@ export const TrackListing = () => {
   const filteredTracks = useFilteredTracks();
   const selectedCount = selectedTrackIds?.length ?? 0;
 
-  const handleEditTrack = (track: Track) => {
-    openEditModal(track);
+  const tableConfig = {
+    showCheckboxes: !!showCheckboxes,
+    selectedTrackIds: new Set(selectedTrackIds ?? []),
+    isAllSelected:
+      filteredTracks.length > 0 &&
+      (selectedTrackIds?.length ?? 0) === filteredTracks.length,
+    onToggleSelect: toggleSelect,
+    onSelectAll: selectAll,
   };
 
-  const handleToggleSelect = (trackId: string) => {
-    toggleSelect(trackId);
-  };
-
-  const handleSelectAll = () => {
-    selectAll();
-  };
+  const columns = useMemo(
+    () => getTrackTableColumns(showCheckboxes, openEditModal),
+    [showCheckboxes, openEditModal]
+  );
 
   const handleBulkEdit = () => {
     openBulkEditModal();
@@ -108,14 +107,8 @@ export const TrackListing = () => {
       ) : (
         <TrackTable
           tracks={filteredTracks}
-          onEditTrack={handleEditTrack}
-          getFileName={getFileName}
-          formatDuration={formatDuration}
-          formatFileSize={formatFileSize}
-          showCheckboxes={showCheckboxes}
-          selectedTrackIds={new Set(selectedTrackIds ?? [])}
-          onToggleSelect={handleToggleSelect}
-          onSelectAll={handleSelectAll}
+          columns={columns}
+          tableConfig={tableConfig}
         />
       )}
     </Box>

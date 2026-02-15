@@ -1,31 +1,34 @@
-import { Box } from '@mui/joy';
+import { Box, Checkbox } from '@mui/joy';
 import { useRef } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import type { Track } from '../../types/electron';
-import { TrackTableHeader, TrackRow } from '../atoms';
+
+export interface Column<T> {
+  key: string;
+  label: string;
+  width?: string;
+  align?: 'left' | 'center' | 'right';
+  render?: (row: T) => React.ReactNode;
+}
+
+interface TableConfig {
+  showCheckboxes: boolean;
+  selectedTrackIds: Set<string>;
+  isAllSelected: boolean;
+  onToggleSelect: (trackId: string) => void;
+  onSelectAll: () => void;
+}
 
 interface TrackTableProps {
   tracks: Track[];
-  onEditTrack: (track: Track) => void;
-  getFileName: (filePath: string) => string;
-  formatDuration: (seconds: number) => string;
-  formatFileSize: (bytes: number) => string;
-  showCheckboxes?: boolean;
-  selectedTrackIds?: Set<string>;
-  onToggleSelect?: (trackId: string) => void;
-  onSelectAll?: () => void;
+  columns: Column<Track>[];
+  tableConfig: TableConfig;
 }
 
 export const TrackTable = ({
   tracks,
-  onEditTrack,
-  getFileName,
-  formatDuration,
-  formatFileSize,
-  showCheckboxes = false,
-  selectedTrackIds = new Set(),
-  onToggleSelect,
-  onSelectAll,
+  columns,
+  tableConfig,
 }: TrackTableProps) => {
   const parentRef = useRef<HTMLDivElement>(null);
 
@@ -37,9 +40,18 @@ export const TrackTable = ({
   });
 
   const items = rowVirtualizer.getVirtualItems();
-  const isAllSelected =
-    tracks.length > 0 &&
-    tracks.every((track) => selectedTrackIds.has(track.id));
+
+  const getWidthAlign = (align: 'left' | 'center' | 'right' = 'left') => {
+    return {
+      alignItems: 'center',
+      justifyContent:
+        align === 'center'
+          ? 'center'
+          : align === 'right'
+            ? 'flex-end'
+            : 'flex-start',
+    };
+  };
 
   return (
     <Box
@@ -62,34 +74,44 @@ export const TrackTable = ({
           backgroundColor: 'background.level2',
         }}
       >
-        {showCheckboxes && (
-          <TrackTableHeader
-            flex="5%"
-            textAlign="center"
-            showCheckbox
-            isAllSelected={isAllSelected}
-            onSelectAll={onSelectAll}
-          />
+        {tableConfig.showCheckboxes && (
+          <Box
+            sx={{
+              flex: '0 0 5%',
+              padding: '12px',
+              fontWeight: 600,
+              color: 'text.primary',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Checkbox
+              checked={tableConfig.isAllSelected}
+              onChange={tableConfig.onSelectAll}
+              size="sm"
+            />
+          </Box>
         )}
-        <TrackTableHeader label="Title" flex={showCheckboxes ? '22%' : '25%'} />
-        <TrackTableHeader
-          label="Artist"
-          flex={showCheckboxes ? '13%' : '15%'}
-        />
-        <TrackTableHeader label="Album" flex={showCheckboxes ? '13%' : '15%'} />
-        <TrackTableHeader
-          label="File Name"
-          flex={showCheckboxes ? '18%' : '20%'}
-        />
-        <TrackTableHeader label="BPM" flex="5%" textAlign="center" />
-        <TrackTableHeader label="Duration" flex="8%" textAlign="right" />
-        <TrackTableHeader label="Size" flex="7%" textAlign="right" />
-        <TrackTableHeader label="Actions" flex="5%" textAlign="center" />
+        {columns.map((column) => (
+          <Box
+            key={column.key}
+            sx={{
+              flex: `0 0 ${column.width}`,
+              padding: '12px',
+              fontWeight: 600,
+              color: 'text.primary',
+              ...getWidthAlign(column.align),
+            }}
+          >
+            {column.label}
+          </Box>
+        ))}
       </Box>
       <Box
         ref={parentRef}
         sx={{
-          height: '600px',
+          flexGrow: 1,
           overflow: 'auto',
         }}
       >
@@ -109,19 +131,48 @@ export const TrackTable = ({
                 left: 0,
                 width: '100%',
                 height: `${virtualRow.size}px`,
-                transform: 'translateY(' + virtualRow.start + 'px)',
+                transform: `translateY(${virtualRow.start}px)`,
+                display: 'flex',
+                alignItems: 'center',
+                borderBottom: '1px solid',
+                borderColor: 'divider',
+                '&:hover': {
+                  backgroundColor: 'rgba(76, 175, 80, 0.08)',
+                },
               }}
             >
-              <TrackRow
-                track={tracks[virtualRow.index]}
-                onEdit={onEditTrack}
-                getFileName={getFileName}
-                formatDuration={formatDuration}
-                formatFileSize={formatFileSize}
-                showCheckbox={showCheckboxes}
-                isSelected={selectedTrackIds.has(tracks[virtualRow.index].id)}
-                onToggleSelect={onToggleSelect}
-              />
+              {tableConfig.showCheckboxes && (
+                <Box
+                  sx={{
+                    flex: '0 0 5%',
+                    padding: '12px',
+                    display: 'flex',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <Checkbox
+                    checked={tableConfig.selectedTrackIds.has(
+                      tracks[virtualRow.index].id
+                    )}
+                    onChange={() =>
+                      tableConfig.onToggleSelect(tracks[virtualRow.index].id)
+                    }
+                    size="sm"
+                  />
+                </Box>
+              )}
+              {columns.map((column) => (
+                <Box
+                  key={column.key}
+                  sx={{
+                    flex: `0 0 ${column.width}`,
+                    padding: '12px',
+                    ...getWidthAlign(column.align),
+                  }}
+                >
+                  {column.render?.(tracks[virtualRow.index])}
+                </Box>
+              ))}
             </Box>
           ))}
         </Box>
