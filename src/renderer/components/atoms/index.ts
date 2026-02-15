@@ -9,6 +9,7 @@ export * from './ProgressSlider';
 export * from './QuickActionButton';
 export * from './SearchInput';
 export * from './SectionTitle';
+export * from './SelectionToolbar';
 export * from './SidebarButton';
 export * from './TrackRow';
 export * from './TrackTableHeader';

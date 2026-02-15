@@ -1,12 +1,12 @@
-import { Box, Stack, Typography, Button, Sheet } from '@mui/joy';
+import { Box, Stack, Typography } from '@mui/joy';
 import { useMemo } from 'react';
 import { useMusicLibraryStore } from '../../stores/musicLibraryStore';
 import { useModalFormStore } from '../../stores/modalFormStore';
 import { useFilteredTracks } from '../../stores/musicLibraryStore';
 import { useSearchDebounce } from '../../stores/useSearchDebounce';
 import { getTrackTableColumns } from '../../utils/getTrackTableColumns';
-import { EmptyState, LoadingState } from '../atoms';
-import { SearchInput } from '../atoms';
+import { EmptyState, LoadingState, SearchInput } from '../atoms';
+import { SelectionToolbar } from '../atoms';
 import { TrackTable } from '../molecules';
 
 export const TrackListing = () => {
@@ -72,32 +72,11 @@ export const TrackListing = () => {
       </Stack>
 
       {showCheckboxes && (
-        <Sheet
-          variant="soft"
-          color="primary"
-          sx={{
-            p: 2,
-            mb: 2,
-            borderRadius: 'sm',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-          }}
-        >
-          <Typography level="body-md" sx={{ fontWeight: 600 }}>
-            {selectedCount} track{selectedCount !== 1 ? 's' : ''} selected
-          </Typography>
-          <Stack direction="row" gap={2}>
-            <Button onClick={handleCancelBulkEdit} size="sm" color="danger">
-              Cancel
-            </Button>
-            {selectedCount > 0 && (
-              <Button onClick={handleBulkEdit} size="sm">
-                Bulk Edit
-              </Button>
-            )}
-          </Stack>
-        </Sheet>
+        <SelectionToolbar
+          selectedCount={selectedCount}
+          onCancel={handleCancelBulkEdit}
+          onBulkEdit={selectedCount > 0 ? handleBulkEdit : undefined}
+        />
       )}
 
       {tracks === null || isLoadingTracks ? (
