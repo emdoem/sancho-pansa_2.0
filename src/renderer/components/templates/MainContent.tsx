@@ -11,14 +11,7 @@ export const MainContent = () => {
   const { initializeLibrary, configMessage } = useMusicLibraryStore();
   const {
     isEditModalOpen,
-    editForm,
-    setEditForm,
-    saveTrack,
-    closeEditModal,
     isBulkEditModalOpen,
-    bulkEditForm,
-    setBulkEditForm,
-    saveBulkEdit,
   } = useModalFormStore();
 
   useEffect(() => {
@@ -69,22 +62,9 @@ export const MainContent = () => {
         </Stack>
       </Stack>
 
-      <TrackEditModal
-        isOpen={isEditModalOpen}
-        onClose={closeEditModal}
-        form={editForm}
-        onFormChange={setEditForm}
-        onSave={saveTrack}
-      />
+      <TrackEditModal isOpen={isEditModalOpen} />
 
-      <BulkEditModal
-        isOpen={isBulkEditModalOpen}
-        onClose={closeEditModal}
-        selectedCount={useModalFormStore.getState().selectedTrackIds.length}
-        form={bulkEditForm}
-        onFormChange={setBulkEditForm}
-        onSave={saveBulkEdit}
-      />
+      <BulkEditModal isOpen={isBulkEditModalOpen} />
     </Stack>
   );
 };

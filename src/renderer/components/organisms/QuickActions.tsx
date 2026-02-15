@@ -18,10 +18,6 @@ import {
 } from '../../utils/apiHandlers';
 import { DuplicateResultModal, OrganizePlanModal } from '../molecules';
 import { useModalFormStore } from '../../stores/modalFormStore';
-import type {
-  DetectDuplicatesResponse,
-  OrganizePlan,
-} from '../../types/electron';
 
 interface SyncProgress {
   total: number;
@@ -30,14 +26,16 @@ interface SyncProgress {
 }
 
 export const QuickActions = () => {
-  const { toggleBulkEditMode, showCheckboxes } = useModalFormStore();
+  const {
+    toggleBulkEditMode,
+    showCheckboxes,
+    setDuplicateResult,
+    setOrganizePlan,
+    isLoading,
+    setIsLoading,
+  } = useModalFormStore();
   const [isDuplicateModalOpen, setIsDuplicateModalOpen] = useState(false);
-  const [duplicateResult, setDuplicateResult] = useState<
-    DetectDuplicatesResponse['result'] | null
-  >(null);
   const [isOrganizeModalOpen, setIsOrganizeModalOpen] = useState(false);
-  const [organizePlan, setOrganizePlan] = useState<OrganizePlan | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncProgress, setSyncProgress] = useState<SyncProgress | null>(null);
 
@@ -63,13 +61,13 @@ export const QuickActions = () => {
 
   const onGeneratePlan = async () => {
     setIsLoading(true);
+    setIsDuplicateModalOpen(false);
     const response = await handleGenerateOrganizePlan();
     setIsLoading(false);
 
     if (response.success && response.plan) {
       setOrganizePlan(response.plan);
       setIsOrganizeModalOpen(true);
-      setIsDuplicateModalOpen(false);
     }
   };
 
@@ -153,19 +151,12 @@ export const QuickActions = () => {
       <DuplicateResultModal
         isOpen={isDuplicateModalOpen}
         onClose={() => setIsDuplicateModalOpen(false)}
-        result={duplicateResult}
         onCleanUp={onGeneratePlan}
-        isLoading={isLoading}
       />
 
       <OrganizePlanModal
         isOpen={isOrganizeModalOpen}
         onClose={() => setIsOrganizeModalOpen(false)}
-        plan={organizePlan}
-        onApply={() => {
-          console.log('Apply clicked - Implementation pending');
-          setIsOrganizeModalOpen(false);
-        }}
       />
     </>
   );

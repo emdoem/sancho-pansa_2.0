@@ -14,41 +14,38 @@ import {
   ListItemContent,
 } from '@mui/joy';
 import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
+import { useModalFormStore } from '../../stores/modalFormStore';
 import { SearchInput } from '../atoms';
-import type { DetectDuplicatesResponse } from '../../../types/electron';
 import { modalSizes } from '../../theme/utilities';
 
 interface DuplicateResultModalProps {
   isOpen: boolean;
   onClose: () => void;
-  result: DetectDuplicatesResponse['result'] | null;
   onCleanUp: () => void;
-  isLoading?: boolean;
 }
 
 export const DuplicateResultModal = ({
   isOpen,
   onClose,
-  result,
   onCleanUp,
-  isLoading = false,
 }: DuplicateResultModalProps) => {
+  const { duplicateResult, isLoading } = useModalFormStore();
   const [searchQuery, setSearchQuery] = useState('');
 
   const filteredDuplicates = useMemo(() => {
-    if (!result) return [];
-    if (!searchQuery.trim()) return result.duplicates;
+    if (!duplicateResult) return [];
+    if (!searchQuery.trim()) return duplicateResult.duplicates;
 
     const query = searchQuery.toLowerCase();
-    return result.duplicates.filter(
+    return duplicateResult.duplicates.filter(
       (group) =>
         group.title?.toLowerCase().includes(query) ||
         group.artist?.toLowerCase().includes(query) ||
         group.album?.toLowerCase().includes(query)
     );
-  }, [result, searchQuery]);
+  }, [duplicateResult, searchQuery]);
 
-  if (!result) return null;
+  if (!duplicateResult) return null;
 
   return (
     <Modal open={isOpen} onClose={onClose}>
@@ -58,13 +55,16 @@ export const DuplicateResultModal = ({
           <Stack gap={2}>
             <Stack direction="row" justifyContent="space-between">
               <Typography level="body-md">
-                Total Tracks: <b>{result.totalTracks}</b>
+                Total Tracks: <b>{duplicateResult.totalTracks}</b>
               </Typography>
               <Typography level="body-md">
-                Unique Tracks: <b>{result.uniqueTracks}</b>
+                Unique Tracks: <b>{duplicateResult.uniqueTracks}</b>
               </Typography>
               <Typography level="body-md" color="danger">
-                Duplicates: <b>{result.totalTracks - result.uniqueTracks}</b>
+                Duplicates:{' '}
+                <b>
+                  {duplicateResult.totalTracks - duplicateResult.uniqueTracks}
+                </b>
               </Typography>
             </Stack>
 

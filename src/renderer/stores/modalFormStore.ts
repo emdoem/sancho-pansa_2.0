@@ -1,6 +1,10 @@
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
-import type { Track } from '../types/electron';
+import type {
+  Track,
+  OrganizePlan,
+  DetectDuplicatesResponse,
+} from '../types/electron';
 import { useMusicLibraryStore } from './musicLibraryStore';
 
 interface ModalFormState {
@@ -23,6 +27,9 @@ interface ModalFormState {
     albumArtist: string;
     album: string;
   };
+  organizePlan: OrganizePlan | null;
+  duplicateResult: DetectDuplicatesResponse['result'] | null;
+  isLoading: boolean;
 
   configureMusicLibrary: () => Promise<void>;
   rescanLibrary: () => Promise<void>;
@@ -47,6 +54,11 @@ interface ModalFormState {
     album?: string;
   }) => void;
   saveBulkEdit: () => Promise<void>;
+  setDuplicateResult: (
+    result: DetectDuplicatesResponse['result'] | null
+  ) => void;
+  setOrganizePlan: (plan: OrganizePlan | null) => void;
+  setIsLoading: (loading: boolean) => void;
 }
 
 export const useModalFormStore = create<ModalFormState>()(
@@ -70,6 +82,9 @@ export const useModalFormStore = create<ModalFormState>()(
       albumArtist: '',
       album: '',
     },
+    organizePlan: null,
+    duplicateResult: null,
+    isLoading: false,
 
     configureMusicLibrary: async () => {
       const { setConfigMessage } = useMusicLibraryStore.getState();
@@ -335,6 +350,24 @@ export const useModalFormStore = create<ModalFormState>()(
             error instanceof Error ? error.message : 'Failed to update tracks',
         });
       }
+    },
+
+    setDuplicateResult: (result: DetectDuplicatesResponse['result'] | null) => {
+      set((state) => {
+        state.duplicateResult = result;
+      });
+    },
+
+    setOrganizePlan: (plan: OrganizePlan | null) => {
+      set((state) => {
+        state.organizePlan = plan;
+      });
+    },
+
+    setIsLoading: (loading: boolean) => {
+      set((state) => {
+        state.isLoading = loading;
+      });
     },
   }))
 );

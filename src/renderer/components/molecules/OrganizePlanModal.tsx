@@ -16,6 +16,7 @@ import {
   Box,
   LinearProgress,
 } from '@mui/joy';
+import { useModalFormStore } from '../../stores/modalFormStore';
 import { SearchInput } from '../atoms';
 import type { OrganizePlan, OrganizeProgress } from '../../types/electron';
 import { modalSizes } from '../../theme/utilities';
@@ -24,16 +25,13 @@ import { handleExecuteOrganizePlan } from '../../utils/apiHandlers';
 interface OrganizePlanModalProps {
   isOpen: boolean;
   onClose: () => void;
-  plan: OrganizePlan | null;
-  onApply: () => void;
 }
 
 export const OrganizePlanModal = ({
   isOpen,
   onClose,
-  plan,
-  onApply: _onApply, // unused, we override it locally
 }: OrganizePlanModalProps) => {
+  const { organizePlan } = useModalFormStore();
   const [searchQuery, setSearchQuery] = useState('');
   const [isExecuting, setIsExecuting] = useState(false);
   const [progress, setProgress] = useState<OrganizeProgress | null>(null);
@@ -47,7 +45,7 @@ export const OrganizePlanModal = ({
   }, []);
 
   const handleApply = async () => {
-    if (!plan) return;
+    if (!organizePlan) return;
     if (
       !confirm(
         'This will permanently move and delete files as listed in the plan. Are you sure you want to proceed?'
@@ -60,7 +58,7 @@ export const OrganizePlanModal = ({
     setProgress({ total: 0, current: 0, action: 'Starting...' });
 
     try {
-      const result = await handleExecuteOrganizePlan(plan);
+      const result = await handleExecuteOrganizePlan(organizePlan);
       if (result.success) {
         alert('Library organized successfully!');
         onClose();
@@ -81,8 +79,10 @@ export const OrganizePlanModal = ({
   };
 
   const filteredActions = useMemo(() => {
-    if (!plan) return [];
-    const nonKeepActions = plan.actions.filter((a) => a.type !== 'KEEP');
+    if (!organizePlan) return [];
+    const nonKeepActions = organizePlan.actions.filter(
+      (a) => a.type !== 'KEEP'
+    );
 
     if (!searchQuery.trim()) return nonKeepActions;
 
@@ -95,9 +95,9 @@ export const OrganizePlanModal = ({
         action.reason.toLowerCase().includes(query) ||
         (action.qualityInfo && action.qualityInfo.toLowerCase().includes(query))
     );
-  }, [plan, searchQuery]);
+  }, [organizePlan, searchQuery]);
 
-  if (!plan) return null;
+  if (!organizePlan) return null;
 
   const formatSize = (bytes: number) => {
     if (bytes === 0) return '0 B';
@@ -144,25 +144,25 @@ export const OrganizePlanModal = ({
               <Box>
                 <Typography level="body-xs">Files to Move</Typography>
                 <Typography level="h4" color="primary">
-                  {plan.stats.toMove}
+                  {organizePlan.stats.toMove}
                 </Typography>
               </Box>
               <Box>
                 <Typography level="body-xs">Duplicates to Delete</Typography>
                 <Typography level="h4" color="danger">
-                  {plan.stats.toDelete}
+                  {organizePlan.stats.toDelete}
                 </Typography>
               </Box>
               <Box>
                 <Typography level="body-xs">Files to Keep</Typography>
                 <Typography level="h4" color="success">
-                  {plan.stats.toKeep}
+                  {organizePlan.stats.toKeep}
                 </Typography>
               </Box>
               <Box>
                 <Typography level="body-xs">Space to Recover</Typography>
                 <Typography level="h4" color="warning">
-                  {formatSize(plan.stats.totalSizeToRecover)}
+                  {formatSize(organizePlan.stats.totalSizeToRecover)}
                 </Typography>
               </Box>
             </Box>
@@ -278,6 +278,8 @@ export const OrganizePlanModal = ({
     </Modal>
   );
 };
+
+export default OrganizePlanModal;
 
 // Helper for path basename since we can't easily import path in renderer without issues sometimes
 const path = {
