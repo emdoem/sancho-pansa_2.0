@@ -10,9 +10,9 @@ import {
   FormLabel,
   Input,
 } from '@mui/joy';
-import { useModalFormStore } from '../../stores/modalFormStore';
+import { useModalFormStore } from '../../../stores/modalFormStore';
 import { trackEditFormFields } from './TrackEditModal.consts';
-import { modalSizes } from '../../theme/utilities';
+import { modalSizes } from '../../../theme/utilities';
 
 interface TrackEditModalProps {
   isOpen: boolean;

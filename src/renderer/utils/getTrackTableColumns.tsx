@@ -1,7 +1,7 @@
 import { Typography, IconButton } from '@mui/joy';
 import EditIcon from '@mui/icons-material/Edit';
 import { formatDuration, formatFileSize, getFileName } from './formatting';
-import type { Column } from '../components/molecules/TrackTable';
+import type { Column } from '../components/molecules/track-table/TrackTable.types';
 import type { Track } from '../types/electron';
 
 export const getTrackTableColumns = (

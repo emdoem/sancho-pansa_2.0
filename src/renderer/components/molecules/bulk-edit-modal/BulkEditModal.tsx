@@ -11,9 +11,9 @@ import {
   Input,
   Typography,
 } from '@mui/joy';
-import { useModalFormStore } from '../../stores/modalFormStore';
+import { useModalFormStore } from '../../../stores/modalFormStore';
 import { bulkEditFormFields } from './BulkEditModal.consts';
-import { modalSizes } from '../../theme/utilities';
+import { modalSizes } from '../../../theme/utilities';
 
 interface BulkEditModalProps {
   isOpen: boolean;

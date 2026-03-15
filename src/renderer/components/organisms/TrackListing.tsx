@@ -1,6 +1,6 @@
 import { Box, Stack, Typography } from '@mui/joy';
 import { useMemo } from 'react';
-import { mixins } from '../../theme/utilities';
+import { mixins, layoutTokens } from '../../theme/utilities';
 import { useMusicLibraryStore } from '../../stores/musicLibraryStore';
 import { useModalFormStore } from '../../stores/modalFormStore';
 import { useFilteredTracks } from '../../stores/musicLibraryStore';
@@ -8,7 +8,7 @@ import { useSearchDebounce } from '../../stores/useSearchDebounce';
 import { getTrackTableColumns } from '../../utils/getTrackTableColumns';
 import { EmptyState, LoadingState, SearchInput } from '../atoms';
 import { SelectionToolbar } from '../atoms';
-import { TrackTable } from '../molecules';
+import { TrackTable } from '../molecules/track-table/TrackTable';
 
 export const TrackListing = () => {
   const { tracks, isLoadingTracks, searchQuery, setSearchQuery } =
@@ -61,7 +61,16 @@ export const TrackListing = () => {
         direction="row"
         justifyContent="space-between"
         alignItems="center"
-        sx={{ mb: 2 }}
+        sx={{
+          mb: 2,
+          position: 'sticky',
+          top: 0,
+          backgroundColor: 'background.level1',
+          zIndex: 2,
+          borderBottom: '1px solid',
+          borderColor: 'divider',
+          height: `${layoutTokens.tableHeaderHeight}px`,
+        }}
       >
         <Typography level="title-lg">
           Track Listing ({filteredTracks.length})
