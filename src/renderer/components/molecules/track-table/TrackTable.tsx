@@ -30,7 +30,7 @@ export const TrackTable = ({
         display: 'flex',
         flexDirection: 'column',
         ...mixins.borderDefault(),
-        overflow: 'visible',
+        overflow: 'scroll',
       }}
     >
       <HeaderRow

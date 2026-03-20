@@ -4,6 +4,7 @@ export interface Column<T> {
   key: string;
   label: string;
   width?: string;
+  minWidth?: string;
   align?: 'left' | 'center' | 'right';
   render?: (row: T) => React.ReactNode;
 }

@@ -25,7 +25,6 @@ export const VirtualizedRows = ({
         height: `${rowVirtualizer.getTotalSize()}px`,
         width: '100%',
         position: 'relative',
-        marginTop: `${layoutTokens.tableHeaderHeight * 2}px`,
       }}
     >
       {items.map((virtualRow: any) => (
@@ -69,6 +68,7 @@ export const VirtualizedRows = ({
                 flex: `0 0 ${column.width}`,
                 ...mixins.tableCell(column.align),
                 height: '100%',
+                minWidth: column.minWidth || 'auto',
                 display: 'flex',
                 alignItems: 'center',
                 overflow: 'hidden',

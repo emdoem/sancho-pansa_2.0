@@ -12,6 +12,7 @@ export const getTrackTableColumns = (
     key: 'title',
     label: 'Title',
     width: showCheckboxes ? '22%' : '25%',
+    minWidth: '180px',
     align: 'left',
     render: (track) => (
       <Typography level="body-md" sx={{ fontWeight: 500 }}>
@@ -23,6 +24,7 @@ export const getTrackTableColumns = (
     key: 'artist',
     label: 'Artist',
     width: showCheckboxes ? '13%' : '15%',
+    minWidth: '150px',
     align: 'left',
     render: (track) => (
       <Typography
@@ -37,6 +39,7 @@ export const getTrackTableColumns = (
     key: 'album',
     label: 'Album',
     width: showCheckboxes ? '13%' : '15%',
+    minWidth: '150px',
     align: 'left',
     render: (track) => (
       <Typography level="body-sm" sx={{ color: 'text.secondary' }}>
@@ -48,6 +51,7 @@ export const getTrackTableColumns = (
     key: 'fileName',
     label: 'File Name',
     width: showCheckboxes ? '16%' : '18%',
+    minWidth: '180px',
     align: 'left',
     render: (track) => (
       <Typography level="body-sm" sx={{ color: 'text.secondary' }}>
@@ -59,6 +63,7 @@ export const getTrackTableColumns = (
     key: 'bpm',
     label: 'BPM',
     width: '7%',
+    minWidth: '90px',
     align: 'center',
     render: (track) => (
       <Typography level="body-sm" sx={{ color: 'text.secondary' }}>
@@ -70,6 +75,7 @@ export const getTrackTableColumns = (
     key: 'duration',
     label: 'Length',
     width: '8%',
+    minWidth: '90px',
     align: 'right',
     render: (track) => (
       <Typography level="body-sm" sx={{ color: 'text.secondary' }}>
@@ -81,6 +87,7 @@ export const getTrackTableColumns = (
     key: 'size',
     label: 'Size',
     width: '7%',
+    minWidth: '90px',
     align: 'right',
     render: (track) => (
       <Typography level="body-sm" sx={{ color: 'text.secondary' }}>
@@ -92,6 +99,7 @@ export const getTrackTableColumns = (
     key: 'actions',
     label: ' ',
     width: '5%',
+    minWidth: '60px',
     align: 'center',
     render: (track) => (
       <IconButton size="sm" onClick={() => onEditTrack(track)}>

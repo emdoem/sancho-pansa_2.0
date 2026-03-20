@@ -55,6 +55,7 @@ export const HeaderRow = ({
             flex: `0 0 ${column.width}`,
             ...mixins.tableHeaderCell(column.align),
             height: '100%',
+            minWidth: column.minWidth || 'auto',
             display: 'flex',
             alignItems: 'center',
             overflow: 'visible',
