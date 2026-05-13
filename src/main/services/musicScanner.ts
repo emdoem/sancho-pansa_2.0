@@ -255,10 +255,13 @@ export class MusicScanner {
       );
 
       // Cleanup deleted files
-      const currentPaths = new Set(musicFiles);
+      // Convert absolute paths from scan to relative for comparison with DB
+      const currentRelativePaths = new Set(
+        musicFiles.map((file) => this.db.toRelativePath(file))
+      );
       const existingTracks = this.db.getAllTracks();
       const deletedFiles = existingTracks.filter(
-        (track) => !currentPaths.has(track.file_path)
+        (track) => !currentRelativePaths.has(track.file_path)
       );
 
       for (const track of deletedFiles) {
@@ -291,8 +294,15 @@ export class MusicScanner {
     try {
       const musicFiles = await this.scanDirectory(libraryPath, progress);
 
+      // Convert absolute paths from scan to relative for comparison with DB
+      const currentRelativePaths = new Set(
+        musicFiles.map((file) => this.db.toRelativePath(file))
+      );
+
       // Check for new files
-      const newFiles = musicFiles.filter((file) => !existingPaths.has(file));
+      const newFiles = musicFiles.filter(
+        (file) => !existingPaths.has(this.db.toRelativePath(file))
+      );
       console.log(`Found ${newFiles.length} new files to process`);
 
       for (const filePath of newFiles) {
@@ -329,9 +339,8 @@ export class MusicScanner {
       }
 
       // Check for deleted files
-      const currentPaths = new Set(musicFiles);
       const deletedFiles = existingTracks.filter(
-        (track) => !currentPaths.has(track.file_path)
+        (track) => !currentRelativePaths.has(track.file_path)
       );
 
       for (const track of deletedFiles) {

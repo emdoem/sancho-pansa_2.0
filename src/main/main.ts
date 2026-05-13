@@ -6,6 +6,7 @@ import MusicLibraryDB from './database/db';
 import { MusicScanner } from './services/musicScanner';
 import { LibraryOrganizer } from './services/libraryOrganizer';
 import { MetadataWriter } from './services/metadataWriter';
+import { SyncManager } from './services/syncManager';
 
 function createWindow() {
   const preloadPath = path.join(__dirname, 'preload.js');
@@ -29,6 +30,19 @@ function createWindow() {
   }
 }
 
+let syncManager: SyncManager | null = null;
+
+function getSyncManager(config: any): SyncManager {
+  if (!syncManager) {
+    syncManager = new SyncManager(config.dbPath);
+    const window = BrowserWindow.getAllWindows()[0];
+    if (window) {
+      syncManager.setWindow(window);
+    }
+  }
+  return syncManager;
+}
+
 function setupIpcHandlers() {
   const firstTimeSetup = new FirstTimeSetup();
 
@@ -38,10 +52,17 @@ function setupIpcHandlers() {
 
       const config = getLibraryConfig();
       if (config) {
-        const db = new MusicLibraryDB(path.dirname(config.dbPath));
-        const scanner = new MusicScanner(db);
-        await scanner.scanLibrary(config.musicRootPath);
-        db.close();
+        const manager = getSyncManager(config);
+        manager.beginWrite();
+        try {
+          const db = new MusicLibraryDB(path.dirname(config.dbPath));
+          db.initializePathResolver(config.musicRootPath);
+          const scanner = new MusicScanner(db);
+          await scanner.scanLibrary(config.musicRootPath);
+          db.close();
+        } finally {
+          manager.endWrite();
+        }
       }
 
       return {
@@ -72,17 +93,24 @@ function setupIpcHandlers() {
           return { success: false, message: 'Library not configured' };
         }
 
-        const db = new MusicLibraryDB(path.dirname(config.dbPath));
-        const scanner = new MusicScanner(db);
-
+        const manager = getSyncManager(config);
         let result;
-        if (options.fullScan) {
-          result = await scanner.scanLibrary(config.musicRootPath, true);
-        } else {
-          result = await scanner.incrementalScan(config.musicRootPath);
-        }
+        manager.beginWrite();
+        try {
+          const db = new MusicLibraryDB(path.dirname(config.dbPath));
+          db.initializePathResolver(config.musicRootPath);
+          const scanner = new MusicScanner(db);
 
-        db.close();
+          if (options.fullScan) {
+            result = await scanner.scanLibrary(config.musicRootPath, true);
+          } else {
+            result = await scanner.incrementalScan(config.musicRootPath);
+          }
+
+          db.close();
+        } finally {
+          manager.endWrite();
+        }
         return { success: true, result };
       } catch (error) {
         console.error('Error scanning music library:', error);
@@ -103,6 +131,7 @@ function setupIpcHandlers() {
       }
 
       const db = new MusicLibraryDB(path.dirname(config.dbPath));
+      db.initializePathResolver(config.musicRootPath);
       const tracks = db.getAllTracks();
       const stats = {
         totalTracks: tracks.length,
@@ -148,20 +177,31 @@ function setupIpcHandlers() {
       }
 
       const db = new MusicLibraryDB(path.dirname(config.dbPath));
-      const tracks = db.getAllTracks().map((track) => ({
-        id: track.id,
-        title: track.title || 'Unknown',
-        artist: track.artist || 'Unknown',
-        albumArtist: track.album_artist_name || track.album_artist || undefined,
-        album: track.album_title || track.album || 'Unknown',
-        trackNo: track.track_no,
-        duration: track.length || 0,
-        bpm: track.tempo || undefined,
-        fileHash: track.file_hash || '',
-        filePath: track.file_path,
-        fileSize: track.file_size || 0,
-        bitrate: track.bitrate || undefined,
-      }));
+      db.initializePathResolver(config.musicRootPath);
+      const tracks = db.getAllTracks().map((track) => {
+        // Resolve relative path to absolute for display
+        const absolutePath = db.resolveTrackPath(track.file_path);
+        const devicePath = db.getDevicePath(track.id, db.getDeviceId());
+
+        return {
+          id: track.id,
+          title: track.title || 'Unknown',
+          artist: track.artist || 'Unknown',
+          albumArtist:
+            track.album_artist_name || track.album_artist || undefined,
+          album: track.album_title || track.album || 'Unknown',
+          trackNo: track.track_no,
+          duration: track.length || 0,
+          bpm: track.tempo || undefined,
+          fileHash: track.file_hash || '',
+          filePath: absolutePath,
+          relativePath: track.file_path,
+          fileSize: track.file_size || 0,
+          bitrate: track.bitrate || undefined,
+          devicePath: devicePath,
+          lastModified: track.last_modified,
+        };
+      });
       db.close();
 
       return { success: true, tracks };
@@ -185,48 +225,56 @@ function setupIpcHandlers() {
           return { success: false, message: 'Library not configured' };
         }
 
-        const db = new MusicLibraryDB(path.dirname(config.dbPath));
+        const manager = getSyncManager(config);
+        manager.beginWrite();
+        try {
+          const db = new MusicLibraryDB(path.dirname(config.dbPath));
+          db.initializePathResolver(config.musicRootPath);
 
-        // Get the track to find its file path
-        const tracks = db.getAllTracks();
-        const track = tracks.find((t: any) => t.id === data.trackId);
+          // Resolve track path to absolute for file metadata writing
+          const tracks = db.getAllTracks();
+          const track = tracks.find((t: any) => t.id === data.trackId);
 
-        if (!track) {
-          db.close();
-          return { success: false, message: 'Track not found' };
-        }
+          if (!track) {
+            db.close();
+            return { success: false, message: 'Track not found' };
+          }
 
-        // Update database
-        db.updateTrack(data.trackId, {
-          title: data.updates.title,
-          artist: data.updates.artist,
-          album_artist: data.updates.albumArtist,
-          album: data.updates.album,
-          tempo: data.updates.bpm,
-        });
-
-        // Sync metadata to file
-        const metadataWriter = new MetadataWriter();
-        const metadataSyncSuccess = await metadataWriter.writeMetadata(
-          track.file_path,
-          {
+          // Update database
+          db.updateTrack(data.trackId, {
             title: data.updates.title,
             artist: data.updates.artist,
-            albumArtist: data.updates.albumArtist,
+            album_artist: data.updates.albumArtist,
             album: data.updates.album,
-            trackNo: data.updates.trackNo,
             tempo: data.updates.bpm,
-          }
-        );
+          });
 
-        db.close();
+          // Sync metadata to file
+          const metadataWriter = new MetadataWriter();
+          const absoluteFilePath = db.resolveTrackPath(track.file_path);
+          const metadataSyncSuccess = await metadataWriter.writeMetadata(
+            absoluteFilePath,
+            {
+              title: data.updates.title,
+              artist: data.updates.artist,
+              albumArtist: data.updates.albumArtist,
+              album: data.updates.album,
+              trackNo: data.updates.trackNo,
+              tempo: data.updates.bpm,
+            }
+          );
 
-        return {
-          success: true,
-          message: metadataSyncSuccess
-            ? 'Track and file metadata updated successfully'
-            : 'Track updated in database (file metadata sync failed or unsupported format)',
-        };
+          db.close();
+
+          return {
+            success: true,
+            message: metadataSyncSuccess
+              ? 'Track and file metadata updated successfully'
+              : 'Track updated in database (file metadata sync failed or unsupported format)',
+          };
+        } finally {
+          manager.endWrite();
+        }
       } catch (error) {
         console.error('Error updating track:', error);
         return {
@@ -247,51 +295,60 @@ function setupIpcHandlers() {
           return { success: false, message: 'Library not configured' };
         }
 
-        const db = new MusicLibraryDB(path.dirname(config.dbPath));
-        const metadataWriter = new MetadataWriter();
-
-        // Prepare updates object, only including fields with values
-        const dbUpdates: any = {};
-        const fileMetadata: any = {};
-
-        if (data.updates.artist !== undefined) {
-          dbUpdates.artist = data.updates.artist;
-          fileMetadata.artist = data.updates.artist;
-        }
-        if (data.updates.albumArtist !== undefined) {
-          dbUpdates.album_artist = data.updates.albumArtist;
-          fileMetadata.albumArtist = data.updates.albumArtist;
-        }
-        if (data.updates.album !== undefined) {
-          dbUpdates.album = data.updates.album;
-          fileMetadata.album = data.updates.album;
-        }
-
-        // Update each track
+        const manager = getSyncManager(config);
         let updatedCount = 0;
         let fileSyncCount = 0;
-        const tracks = db.getAllTracks();
 
-        for (const trackId of data.trackIds) {
-          try {
-            db.updateTrack(trackId, dbUpdates);
-            updatedCount++;
+        manager.beginWrite();
+        try {
+          const db = new MusicLibraryDB(path.dirname(config.dbPath));
+          db.initializePathResolver(config.musicRootPath);
+          const metadataWriter = new MetadataWriter();
 
-            // Sync metadata to file
-            const track = tracks.find((t: any) => t.id === trackId);
-            if (track && Object.keys(fileMetadata).length > 0) {
-              const success = await metadataWriter.writeMetadata(
-                track.file_path,
-                fileMetadata
-              );
-              if (success) fileSyncCount++;
-            }
-          } catch (error) {
-            console.error(`Error updating track ${trackId}:`, error);
+          // Prepare updates object, only including fields with values
+          const dbUpdates: any = {};
+          const fileMetadata: any = {};
+
+          if (data.updates.artist !== undefined) {
+            dbUpdates.artist = data.updates.artist;
+            fileMetadata.artist = data.updates.artist;
           }
-        }
+          if (data.updates.albumArtist !== undefined) {
+            dbUpdates.album_artist = data.updates.albumArtist;
+            fileMetadata.albumArtist = data.updates.albumArtist;
+          }
+          if (data.updates.album !== undefined) {
+            dbUpdates.album = data.updates.album;
+            fileMetadata.album = data.updates.album;
+          }
 
-        db.close();
+          // Update each track
+          const tracks = db.getAllTracks();
+
+          for (const trackId of data.trackIds) {
+            try {
+              db.updateTrack(trackId, dbUpdates);
+              updatedCount++;
+
+              // Sync metadata to file
+              const track = tracks.find((t: any) => t.id === trackId);
+              if (track && Object.keys(fileMetadata).length > 0) {
+                const absoluteFilePath = db.resolveTrackPath(track.file_path);
+                const success = await metadataWriter.writeMetadata(
+                  absoluteFilePath,
+                  fileMetadata
+                );
+                if (success) fileSyncCount++;
+              }
+            } catch (error) {
+              console.error(`Error updating track ${trackId}:`, error);
+            }
+          }
+
+          db.close();
+        } finally {
+          manager.endWrite();
+        }
 
         return {
           success: true,
@@ -317,6 +374,7 @@ function setupIpcHandlers() {
       }
 
       const db = new MusicLibraryDB(path.dirname(config.dbPath));
+      db.initializePathResolver(config.musicRootPath);
       const result = db.detectDuplicates();
       db.close();
 
@@ -339,6 +397,7 @@ function setupIpcHandlers() {
       }
 
       const db = new MusicLibraryDB(path.dirname(config.dbPath));
+      db.initializePathResolver(config.musicRootPath);
       const organizer = new LibraryOrganizer(db);
       const plan = await organizer.generatePlan(config.musicRootPath);
       db.close();
@@ -364,20 +423,28 @@ function setupIpcHandlers() {
       // Get the window to send progress updates
       const window = BrowserWindow.getAllWindows()[0];
 
-      const db = new MusicLibraryDB(path.dirname(config.dbPath));
-      const organizer = new LibraryOrganizer(db);
+      const manager = getSyncManager(config);
+      let result;
+      manager.beginWrite();
+      try {
+        const db = new MusicLibraryDB(path.dirname(config.dbPath));
+        db.initializePathResolver(config.musicRootPath);
+        const organizer = new LibraryOrganizer(db);
 
-      const result = await organizer.executePlan(
-        plan,
-        config.musicRootPath,
-        (progress) => {
-          if (window) {
-            window.webContents.send('organize-progress', progress);
+        result = await organizer.executePlan(
+          plan,
+          config.musicRootPath,
+          (progress) => {
+            if (window) {
+              window.webContents.send('organize-progress', progress);
+            }
           }
-        }
-      );
+        );
 
-      db.close();
+        db.close();
+      } finally {
+        manager.endWrite();
+      }
 
       return { success: result.success, errors: result.errors };
     } catch (error) {
@@ -399,6 +466,7 @@ function setupIpcHandlers() {
 
       const window = BrowserWindow.getAllWindows()[0];
       const db = new MusicLibraryDB(path.dirname(config.dbPath));
+      db.initializePathResolver(config.musicRootPath);
       const metadataWriter = new MetadataWriter();
       const tracks = db.getAllTracks();
 
@@ -418,7 +486,8 @@ function setupIpcHandlers() {
         }
 
         try {
-          const success = await metadataWriter.writeMetadata(track.file_path, {
+          const absoluteFilePath = db.resolveTrackPath(track.file_path);
+          const success = await metadataWriter.writeMetadata(absoluteFilePath, {
             title: track.title,
             artist: track.artist,
             albumArtist: track.album_artist,
@@ -475,6 +544,41 @@ function setupIpcHandlers() {
       };
     } catch (error) {
       console.error('Error resetting library:', error);
+      return {
+        success: false,
+        message:
+          error instanceof Error ? error.message : 'Unknown error occurred',
+      };
+    }
+  });
+
+  ipcMain.handle('get-sync-status', async () => {
+    try {
+      const config = getLibraryConfig();
+      if (!config || !syncManager) {
+        return { success: false, message: 'Sync manager not initialized' };
+      }
+
+      const status = syncManager.getStatus();
+      return { success: true, status };
+    } catch (error) {
+      console.error('Error getting sync status:', error);
+      return {
+        success: false,
+        message:
+          error instanceof Error ? error.message : 'Unknown error occurred',
+      };
+    }
+  });
+
+  ipcMain.handle('acknowledge-external-changes', async () => {
+    try {
+      if (syncManager) {
+        syncManager.acknowledgeExternalChanges();
+      }
+      return { success: true };
+    } catch (error) {
+      console.error('Error acknowledging external changes:', error);
       return {
         success: false,
         message:

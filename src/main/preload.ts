@@ -78,6 +78,25 @@ const electronAPI = {
       ipcRenderer.removeListener('sync-metadata-progress', subscription);
     };
   },
+
+  // Sync status methods
+  getSyncStatus: () => {
+    console.log('getSyncStatus');
+    return ipcRenderer.invoke('get-sync-status');
+  },
+
+  acknowledgeExternalChanges: () => {
+    console.log('acknowledgeExternalChanges');
+    return ipcRenderer.invoke('acknowledge-external-changes');
+  },
+
+  onDatabaseExternallyChanged: (callback: (data: any) => void) => {
+    const subscription = (_: any, value: any) => callback(value);
+    ipcRenderer.on('database-externally-changed', subscription);
+    return () => {
+      ipcRenderer.removeListener('database-externally-changed', subscription);
+    };
+  },
 };
 
 // Expose the API to the renderer process

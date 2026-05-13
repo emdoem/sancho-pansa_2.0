@@ -1,10 +1,12 @@
 import Database from 'better-sqlite3';
 import path from 'path';
 import crypto from 'crypto';
+import { PathResolver } from '../services/pathResolver';
 
 class MusicLibraryDB {
   private db: Database.Database;
   private deviceId: string;
+  private pathResolver: PathResolver | null = null;
 
   constructor(cloudSyncPath: string, deviceId?: string) {
     // Database stored in cloud-synced folder
@@ -20,6 +22,11 @@ class MusicLibraryDB {
     this.deviceId = deviceId
       ? this.setDeviceId(deviceId)
       : this.getOrCreateDeviceId();
+  }
+
+  public initializePathResolver(musicRootPath: string): void {
+    this.pathResolver = new PathResolver(musicRootPath);
+    this.migrateToRelativePaths(musicRootPath);
   }
 
   private initializeTables(): void {
@@ -185,6 +192,131 @@ class MusicLibraryDB {
     return this.deviceId;
   }
 
+  /**
+   * Migrate absolute file paths to relative paths.
+   * Call this after initializing the path resolver.
+   */
+  private migrateToRelativePaths(musicRootPath: string): void {
+    const migrationVersion = this.getMetadata('path_migration_version');
+    if (migrationVersion === '1') return;
+
+    console.log('Migrating absolute paths to relative paths...');
+    const tracks = this.db
+      .prepare('SELECT id, file_path FROM tracks')
+      .all() as Array<{ id: string; file_path: string }>;
+
+    const resolver = new PathResolver(musicRootPath);
+    let migratedCount = 0;
+
+    for (const track of tracks) {
+      if (!track.file_path || resolver.isRelative(track.file_path)) continue;
+
+      try {
+        const relativePath = resolver.toRelative(track.file_path);
+        this.db
+          .prepare('UPDATE tracks SET file_path = ? WHERE id = ?')
+          .run(relativePath, track.id);
+        migratedCount++;
+      } catch (error) {
+        console.warn(
+          `Failed to migrate path for track ${track.id}: ${track.file_path}`,
+          error
+        );
+      }
+    }
+
+    this.setMetadata('path_migration_version', '1');
+    console.log(`Path migration complete. Migrated ${migratedCount} tracks.`);
+  }
+
+  /**
+   * Resolve a track's relative path to an absolute path for this device.
+   */
+  public resolveTrackPath(relativePath: string): string {
+    if (!this.pathResolver) {
+      throw new Error(
+        'PathResolver not initialized. Call initializePathResolver first.'
+      );
+    }
+    return this.pathResolver.toAbsolute(relativePath);
+  }
+
+  /**
+   * Convert an absolute path to relative for storage.
+   */
+  public toRelativePath(absolutePath: string): string {
+    if (!this.pathResolver) {
+      throw new Error(
+        'PathResolver not initialized. Call initializePathResolver first.'
+      );
+    }
+    return this.pathResolver.toRelative(absolutePath);
+  }
+
+  /**
+   * Register a device-specific path for a track.
+   */
+  public registerDevicePath(
+    trackId: string,
+    deviceId: string,
+    localPath: string
+  ): void {
+    this.db
+      .prepare(
+        `INSERT OR REPLACE INTO device_paths (device_id, track_id, local_path, last_synced) 
+       VALUES (?, ?, ?, ?)`
+      )
+      .run(deviceId, trackId, localPath, Date.now());
+  }
+
+  /**
+   * Get the device-specific path for a track.
+   */
+  public getDevicePath(trackId: string, deviceId: string): string | null {
+    const result = this.db
+      .prepare(
+        'SELECT local_path FROM device_paths WHERE track_id = ? AND device_id = ?'
+      )
+      .get(trackId, deviceId) as { local_path: string } | undefined;
+    return result ? result.local_path : null;
+  }
+
+  /**
+   * Log an operation for conflict resolution.
+   */
+  public logOperation(
+    operationType: string,
+    trackId: string,
+    data?: string
+  ): void {
+    this.db
+      .prepare(
+        `INSERT INTO operation_log (device_id, operation_type, track_id, timestamp, data) 
+       VALUES (?, ?, ?, ?, ?)`
+      )
+      .run(this.deviceId, operationType, trackId, Date.now(), data || null);
+  }
+
+  /**
+   * Get operations since a given timestamp.
+   */
+  public getOperationsSince(timestamp: number): Array<any> {
+    return this.db
+      .prepare(
+        'SELECT * FROM operation_log WHERE timestamp > ? ORDER BY timestamp DESC'
+      )
+      .all(timestamp) as Array<any>;
+  }
+
+  /**
+   * Update the last_modified timestamp for a track.
+   */
+  public touchTrack(trackId: string): void {
+    this.db
+      .prepare('UPDATE tracks SET last_modified = ? WHERE id = ?')
+      .run(Date.now(), trackId);
+  }
+
   public setMetadata(key: string, value: string): void {
     this.db
       .prepare(
@@ -225,9 +357,22 @@ class MusicLibraryDB {
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
+    // Ensure path is relative for cross-device portability
+    let relativePath = trackData.file_path;
+    if (this.pathResolver && !this.pathResolver.isRelative(relativePath)) {
+      try {
+        relativePath = this.pathResolver.toRelative(relativePath);
+      } catch (error) {
+        console.warn(
+          'Failed to convert path to relative, storing as-is:',
+          error
+        );
+      }
+    }
+
     stmt.run(
       trackData.id || crypto.randomUUID(),
-      trackData.file_path,
+      relativePath,
       trackData.file_hash || null,
       trackData.artist || null,
       trackData.album_artist || null,
@@ -240,7 +385,7 @@ class MusicLibraryDB {
       trackData.file_size || null,
       trackData.bitrate || null,
       trackData.format || null,
-      trackData.last_modified || null,
+      trackData.last_modified || Date.now(),
       Date.now()
     );
   }
@@ -306,18 +451,43 @@ class MusicLibraryDB {
 
     if (fields.length === 0) return;
 
+    // Always update last_modified on any track edit
+    fields.push('last_modified = ?');
+    values.push(Date.now());
+
     values.push(trackId);
     const query = `UPDATE tracks SET ${fields.join(', ')} WHERE id = ?`;
     this.db.prepare(query).run(...values);
 
-    // 3. Cleanup orphaned albums/artists
+    // 3. Log the operation for sync conflict resolution
+    this.logOperation('update', trackId, JSON.stringify(Object.keys(updates)));
+
+    // 4. Cleanup orphaned albums/artists
     this.cleanupOrphans();
   }
 
   public updateTrackPath(trackId: string, newPath: string): void {
+    // Convert to relative path for storage
+    let relativePath = newPath;
+    if (this.pathResolver && !this.pathResolver.isRelative(newPath)) {
+      try {
+        relativePath = this.pathResolver.toRelative(newPath);
+      } catch (error) {
+        console.warn('Failed to convert new path to relative:', error);
+      }
+    }
+
     this.db
-      .prepare('UPDATE tracks SET file_path = ? WHERE id = ?')
-      .run(newPath, trackId);
+      .prepare(
+        'UPDATE tracks SET file_path = ?, last_modified = ? WHERE id = ?'
+      )
+      .run(relativePath, Date.now(), trackId);
+
+    this.logOperation(
+      'move',
+      trackId,
+      JSON.stringify({ newPath: relativePath })
+    );
   }
 
   private cleanupOrphans(): void {
@@ -336,9 +506,28 @@ class MusicLibraryDB {
   }
 
   public getTrackByPath(filePath: string): any {
-    return this.db
+    // Try exact match first (for relative paths)
+    let track = this.db
       .prepare('SELECT * FROM tracks WHERE file_path = ?')
       .get(filePath);
+
+    if (track) return track;
+
+    // If pathResolver is initialized, also try matching the relative version
+    // This handles cases where an absolute path is passed but DB stores relative
+    if (this.pathResolver && !this.pathResolver.isRelative(filePath)) {
+      try {
+        const relativePath = this.pathResolver.toRelative(filePath);
+        track = this.db
+          .prepare('SELECT * FROM tracks WHERE file_path = ?')
+          .get(relativePath);
+        if (track) return track;
+      } catch (error) {
+        // Path might be outside root, ignore
+      }
+    }
+
+    return null;
   }
 
   public getAllTracks(): any[] {
@@ -483,6 +672,7 @@ class MusicLibraryDB {
   }
 
   public deleteTrack(trackId: string): void {
+    this.logOperation('delete', trackId);
     this.db.prepare('DELETE FROM tracks WHERE id = ?').run(trackId);
     this.db.prepare('DELETE FROM device_paths WHERE track_id = ?').run(trackId);
     this.db

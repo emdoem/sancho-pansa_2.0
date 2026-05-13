@@ -98,6 +98,9 @@ export class LibraryOrganizer {
         const artist = (track.artist || 'Unknown').trim();
         const title = (track.title || 'Unknown').trim();
 
+        // Resolve relative path to absolute for source
+        const absoluteSourcePath = this.db.resolveTrackPath(track.file_path);
+
         // Skip tracks without proper metadata for organization
         if (
           artist.toLowerCase() === 'unknown' ||
@@ -105,7 +108,7 @@ export class LibraryOrganizer {
         ) {
           actions.push({
             type: 'KEEP',
-            sourcePath: track.file_path,
+            sourcePath: absoluteSourcePath,
             reason: 'Insufficient metadata for organization',
             qualityInfo: `${track.format.toUpperCase()} ${track.bitrate}kbps`,
           });
@@ -122,7 +125,7 @@ export class LibraryOrganizer {
         const trackNoStr = track.track_no
           ? `${track.track_no.toString().padStart(2, '0')} - `
           : '';
-        const ext = path.extname(track.file_path);
+        const ext = path.extname(absoluteSourcePath);
 
         const targetDir = path.join(libraryRoot, artistFolder, albumFolder);
         let targetFileName = `${trackNoStr}${titleField}${ext}`;
@@ -140,10 +143,10 @@ export class LibraryOrganizer {
         }
         usedTargetPaths.set(targetPath.toLowerCase(), track.id);
 
-        if (path.normalize(track.file_path) !== path.normalize(targetPath)) {
+        if (path.normalize(absoluteSourcePath) !== path.normalize(targetPath)) {
           actions.push({
             type: 'MOVE',
-            sourcePath: track.file_path,
+            sourcePath: absoluteSourcePath,
             targetPath: targetPath,
             reason: 'Standardizing folder structure and naming',
             qualityInfo: `${track.format.toUpperCase()} ${track.bitrate}kbps`,
@@ -152,7 +155,7 @@ export class LibraryOrganizer {
         } else {
           actions.push({
             type: 'KEEP',
-            sourcePath: track.file_path,
+            sourcePath: absoluteSourcePath,
             reason: 'Already correctly named and placed',
             qualityInfo: `${track.format.toUpperCase()} ${track.bitrate}kbps`,
           });
@@ -198,6 +201,7 @@ export class LibraryOrganizer {
 
       // --- HANDLE KEEPER ---
       // Use Album Artist from the normalized table for the folder structure
+      const keeperAbsolutePath = this.db.resolveTrackPath(keeper.file_path);
       const artistFolder = this.sanitize(
         keeper.album_artist_name || keeper.album_artist || keeper.artist
       );
@@ -206,7 +210,7 @@ export class LibraryOrganizer {
       const trackNoStr = keeper.track_no
         ? `${keeper.track_no.toString().padStart(2, '0')} - `
         : '';
-      const ext = path.extname(keeper.file_path);
+      const ext = path.extname(keeperAbsolutePath);
 
       const targetDir = path.join(libraryRoot, artistFolder, albumFolder);
       let targetFileName = `${trackNoStr}${titleField}${ext}`;
@@ -224,10 +228,10 @@ export class LibraryOrganizer {
       }
       usedTargetPaths.set(targetPath.toLowerCase(), keeper.id);
 
-      if (path.normalize(keeper.file_path) !== path.normalize(targetPath)) {
+      if (path.normalize(keeperAbsolutePath) !== path.normalize(targetPath)) {
         actions.push({
           type: 'MOVE',
-          sourcePath: keeper.file_path,
+          sourcePath: keeperAbsolutePath,
           targetPath: targetPath,
           reason: 'Standardizing folder structure and naming',
           qualityInfo: `${keeper.format.toUpperCase()} ${keeper.bitrate}kbps`,
@@ -236,7 +240,7 @@ export class LibraryOrganizer {
       } else {
         actions.push({
           type: 'KEEP',
-          sourcePath: keeper.file_path,
+          sourcePath: keeperAbsolutePath,
           reason: 'Already correctly named and placed',
           qualityInfo: `${keeper.format.toUpperCase()} ${keeper.bitrate}kbps`,
         });
@@ -245,9 +249,10 @@ export class LibraryOrganizer {
 
       // --- HANDLE DUPLICATES ---
       for (const dup of duplicates) {
+        const dupAbsolutePath = this.db.resolveTrackPath(dup.file_path);
         actions.push({
           type: 'DELETE',
-          sourcePath: dup.file_path,
+          sourcePath: dupAbsolutePath,
           reason: `Duplicate (same hash). Keeper: ${keeper.format.toUpperCase()} ${keeper.bitrate}kbps, ${this.getMetadataCompletenessScore(keeper)}/10 fields populated`,
           qualityInfo: `${dup.format.toUpperCase()} ${dup.bitrate}kbps`,
         });

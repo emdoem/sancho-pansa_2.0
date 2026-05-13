@@ -26,11 +26,10 @@
     "noUncheckedSideEffectImports": true,
 
     /* IDE Support */
-    "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"],
-      "@/components/*": ["src/renderer/components/*"],
-      "@/renderer/*": ["src/renderer/*"]
+      "@/*": ["./src/*"],
+      "@/components/*": ["./src/renderer/components/*"],
+      "@/renderer/*": ["./src/renderer/*"]
     }
   },
   "include": ["src"]
