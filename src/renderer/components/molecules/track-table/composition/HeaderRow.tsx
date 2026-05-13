@@ -24,8 +24,8 @@ export const HeaderRow = ({
         borderColor: 'divider',
         backgroundColor: 'background.level2',
         position: 'sticky',
-        top: `${layoutTokens.tableHeaderHeight}px`, // Position below TrackListing header
-        zIndex: 3, // Higher than TrackListing header (zIndex: 2)
+        top: 0,
+        zIndex: 3,
         height: `${layoutTokens.tableHeaderHeight}px`,
         // Important: Prevent flex from changing the height
         flexShrink: 0,

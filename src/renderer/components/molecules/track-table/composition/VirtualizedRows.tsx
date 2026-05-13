@@ -1,7 +1,7 @@
 import { Box, Checkbox } from '@mui/joy';
 import type { TableConfig } from '../TrackTable.types';
 import type { Column } from '../TrackTable.types';
-import { mixins, layoutTokens } from '../../../../theme/utilities';
+import { mixins } from '../../../../theme/utilities';
 
 interface VirtualizedRowsProps {
   tracks: any[];
@@ -38,6 +38,7 @@ export const VirtualizedRows = ({
             height: `${virtualRow.size}px`,
             transform: `translateY(${virtualRow.start}px)`,
             ...mixins.tableRowHover(),
+            overflow: 'visible',
           }}
         >
           {tableConfig.showCheckboxes && (

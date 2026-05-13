@@ -66,7 +66,7 @@ export const TrackListing = () => {
           position: 'sticky',
           top: 0,
           backgroundColor: 'background.level1',
-          zIndex: 2,
+          zIndex: 5,
           borderBottom: '1px solid',
           borderColor: 'divider',
           height: `${layoutTokens.tableHeaderHeight}px`,
@@ -79,11 +79,13 @@ export const TrackListing = () => {
       </Stack>
 
       {showCheckboxes && (
-        <SelectionToolbar
-          selectedCount={selectedCount}
-          onCancel={handleCancelBulkEdit}
-          onBulkEdit={selectedCount > 0 ? handleBulkEdit : undefined}
-        />
+        <Stack sx={{ position: 'sticky', zIndex: 4}}>
+          <SelectionToolbar
+            selectedCount={selectedCount}
+            onCancel={handleCancelBulkEdit}
+            onBulkEdit={selectedCount > 0 ? handleBulkEdit : undefined}
+          />
+        </Stack>
       )}
 
       {tracks === null || isLoadingTracks ? (

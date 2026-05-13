@@ -24,13 +24,14 @@ export const TrackTable = ({
 
   return (
     <Box
+      ref={parentRef}
       sx={{
         borderRadius: 2,
         height: '650px',
         display: 'flex',
         flexDirection: 'column',
         ...mixins.borderDefault(),
-        overflow: 'scroll',
+        overflow: 'auto',
       }}
     >
       <HeaderRow
@@ -40,10 +41,9 @@ export const TrackTable = ({
         onSelectAll={tableConfig.onSelectAll}
       />
       <Box
-        ref={parentRef}
         sx={{
           flexGrow: 1,
-          overflow: 'auto',
+          overflow: 'visible',
         }}
       >
         <VirtualizedRows
