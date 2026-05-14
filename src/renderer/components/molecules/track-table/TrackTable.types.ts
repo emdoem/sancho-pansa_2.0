@@ -1,4 +1,4 @@
-import type { Track } from "@/renderer/types/electron";
+import type { Track } from '@/renderer/types/electron';
 
 export interface Column<T> {
   key: string;
@@ -22,4 +22,3 @@ export interface TrackTableProps {
   columns: Column<Track>[];
   tableConfig: TableConfig;
 }
-

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Accordion,
   AccordionSummary,
@@ -25,7 +25,17 @@ interface SyncProgress {
   track: string;
 }
 
-export const QuickActions = () => {
+interface QuickActionsProps {
+  expanded?: boolean;
+  onChange?: (event: React.SyntheticEvent, isExpanded: boolean) => void;
+  onWheel?: React.WheelEventHandler<HTMLDivElement>;
+}
+
+export const QuickActions = ({
+  expanded,
+  onChange,
+  onWheel,
+}: QuickActionsProps) => {
   const {
     toggleBulkEditMode,
     showCheckboxes,
@@ -101,7 +111,11 @@ export const QuickActions = () => {
 
   return (
     <>
-      <Accordion defaultExpanded>
+      <Accordion
+        expanded={expanded !== undefined ? expanded : true}
+        onChange={onChange}
+        onWheel={onWheel}
+      >
         <AccordionSummary indicator={<ExpandMoreIcon />}>
           Quick Actions
         </AccordionSummary>

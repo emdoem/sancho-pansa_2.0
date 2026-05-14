@@ -7,6 +7,7 @@ interface HeaderRowProps {
   showCheckboxes: boolean;
   isAllSelected: boolean;
   onSelectAll: () => void;
+  minWidth: number;
 }
 
 export const HeaderRow = ({
@@ -14,12 +15,14 @@ export const HeaderRow = ({
   showCheckboxes,
   isAllSelected,
   onSelectAll,
+  minWidth,
 }: HeaderRowProps) => {
   return (
     <Box
       sx={{
         display: 'flex',
         width: '100%',
+        minWidth: `${minWidth}px`,
         borderBottom: '1px solid',
         borderColor: 'divider',
         backgroundColor: 'background.level2',
@@ -43,6 +46,7 @@ export const HeaderRow = ({
             alignItems: 'center',
             justifyContent: 'center',
             flexShrink: 0,
+            minWidth: '60px',
           }}
         >
           <Checkbox checked={isAllSelected} onChange={onSelectAll} size="sm" />

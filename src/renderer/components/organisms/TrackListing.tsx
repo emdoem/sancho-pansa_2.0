@@ -55,6 +55,10 @@ export const TrackListing = () => {
       sx={{
         ...mixins.cardContainer(),
         padding: 3,
+        display: 'flex',
+        flexDirection: 'column',
+        flexGrow: 1,
+        overflow: 'hidden',
       }}
     >
       <Stack
@@ -79,7 +83,7 @@ export const TrackListing = () => {
       </Stack>
 
       {showCheckboxes && (
-        <Stack sx={{ position: 'sticky', zIndex: 4}}>
+        <Stack sx={{ flexShrink: 0, zIndex: 4 }}>
           <SelectionToolbar
             selectedCount={selectedCount}
             onCancel={handleCancelBulkEdit}
@@ -88,17 +92,26 @@ export const TrackListing = () => {
         </Stack>
       )}
 
-      {tracks === null || isLoadingTracks ? (
-        <LoadingState />
-      ) : filteredTracks.length === 0 ? (
-        <EmptyState hasSearch={!!searchQuery} />
-      ) : (
-        <TrackTable
-          tracks={filteredTracks}
-          columns={columns}
-          tableConfig={tableConfig}
-        />
-      )}
+      <Box
+        sx={{
+          flexGrow: 1,
+          overflow: 'hidden',
+          display: 'flex',
+          flexDirection: 'column',
+        }}
+      >
+        {tracks === null || isLoadingTracks ? (
+          <LoadingState />
+        ) : filteredTracks.length === 0 ? (
+          <EmptyState hasSearch={!!searchQuery} />
+        ) : (
+          <TrackTable
+            tracks={filteredTracks}
+            columns={columns}
+            tableConfig={tableConfig}
+          />
+        )}
+      </Box>
     </Box>
   );
 };

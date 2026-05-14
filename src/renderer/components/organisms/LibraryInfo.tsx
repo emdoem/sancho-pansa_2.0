@@ -1,3 +1,4 @@
+import React from 'react';
 import {
   Accordion,
   AccordionSummary,
@@ -10,14 +11,28 @@ import { useModalFormStore } from '../../stores/modalFormStore';
 import { useLibraryStats } from '../../stores/musicLibraryStore';
 import { LibraryInfoDisplay, LibraryInfoNotConfigured } from '../molecules';
 
-export const LibraryInfo = () => {
+interface LibraryInfoProps {
+  expanded?: boolean;
+  onChange?: (event: React.SyntheticEvent, isExpanded: boolean) => void;
+  onWheel?: React.WheelEventHandler<HTMLDivElement>;
+}
+
+export const LibraryInfo = ({
+  expanded,
+  onChange,
+  onWheel,
+}: LibraryInfoProps) => {
   const { isLibraryConfigured } = useMusicLibraryStore();
   const { configureMusicLibrary, rescanLibrary } = useModalFormStore();
   const { trackCount, totalSize, totalDuration } = useLibraryStats();
   const { isConfiguring, isScanning } = useModalFormStore.getState();
 
   return (
-    <Accordion defaultExpanded>
+    <Accordion
+      expanded={expanded !== undefined ? expanded : true}
+      onChange={onChange}
+      onWheel={onWheel}
+    >
       <AccordionSummary indicator={<ExpandMoreIcon />}>
         <Typography level="title-lg">Library Info</Typography>
       </AccordionSummary>

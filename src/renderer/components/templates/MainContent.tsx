@@ -1,5 +1,5 @@
-import { Stack, Typography, AccordionGroup } from '@mui/joy';
-import { useEffect } from 'react';
+import { Stack, AccordionGroup } from '@mui/joy';
+import React, { useEffect, useState } from 'react';
 import { useMusicLibraryStore } from '../../stores/musicLibraryStore';
 import { useModalFormStore } from '../../stores/modalFormStore';
 import { ConfigMessage } from '../atoms';
@@ -9,14 +9,29 @@ import { mixins } from '../../theme/utilities';
 
 export const MainContent = () => {
   const { initializeLibrary, configMessage } = useMusicLibraryStore();
-  const {
-    isEditModalOpen,
-    isBulkEditModalOpen,
-  } = useModalFormStore();
+  const { isEditModalOpen, isBulkEditModalOpen } = useModalFormStore();
+
+  const [libraryInfoExpanded, setLibraryInfoExpanded] = useState(true);
+  const [quickActionsExpanded, setQuickActionsExpanded] = useState(false);
 
   useEffect(() => {
     initializeLibrary();
   }, []);
+
+  const handleAccordionChange =
+    (setter: (v: boolean) => void) =>
+    (_event: React.SyntheticEvent, isExpanded: boolean) => {
+      setter(isExpanded);
+    };
+
+  const handleAccordionWheel =
+    (setter: (v: boolean) => void) => (event: React.WheelEvent) => {
+      if (event.deltaY > 0) {
+        setter(false);
+      } else if (event.deltaY < 0) {
+        setter(true);
+      }
+    };
 
   return (
     <Stack
@@ -34,19 +49,19 @@ export const MainContent = () => {
           height: '100%',
           backgroundColor: 'background.body',
           padding: 3,
-          overflow: 'auto',
+          overflow: 'hidden',
         }}
         alignItems="stretch"
       >
-        <Typography level="h2" sx={{ mb: 2 }}>
-          Music Library
-        </Typography>
-
         {configMessage && (
           <ConfigMessage type={configMessage.type} text={configMessage.text} />
         )}
 
-        <Stack direction="column" gap={3}>
+        <Stack
+          direction="column"
+          gap={3}
+          sx={{ flexGrow: 1, overflow: 'hidden' }}
+        >
           <AccordionGroup
             sx={{
               '& .MuiAccordion-root': {
@@ -54,8 +69,16 @@ export const MainContent = () => {
               },
             }}
           >
-            <LibraryInfo />
-            <QuickActions />
+            <LibraryInfo
+              expanded={libraryInfoExpanded}
+              onChange={handleAccordionChange(setLibraryInfoExpanded)}
+              onWheel={handleAccordionWheel(setLibraryInfoExpanded)}
+            />
+            <QuickActions
+              expanded={quickActionsExpanded}
+              onChange={handleAccordionChange(setQuickActionsExpanded)}
+              onWheel={handleAccordionWheel(setQuickActionsExpanded)}
+            />
           </AccordionGroup>
 
           <TrackListing />

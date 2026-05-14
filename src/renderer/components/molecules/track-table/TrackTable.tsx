@@ -1,5 +1,5 @@
 import { Box } from '@mui/joy';
-import { useRef } from 'react';
+import { useMemo, useRef } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { mixins, layoutTokens } from '../../../theme/utilities';
 import { HeaderRow } from './composition/HeaderRow';
@@ -22,12 +22,42 @@ export const TrackTable = ({
 
   const items = rowVirtualizer.getVirtualItems();
 
+  const tableMinWidth = useMemo(() => {
+    const checkboxMinWidth = tableConfig.showCheckboxes ? 60 : 0;
+    const checkboxPct = tableConfig.showCheckboxes ? 0.05 : 0;
+
+    // Start with sum of all minWidths
+    let M =
+      columns.reduce((sum, col) => {
+        return sum + parseInt(col.minWidth || '0', 10);
+      }, 0) + checkboxMinWidth;
+
+    // Iterate to find the fixed point where container width equals
+    // the sum of all flex item widths (some use percentage, some minWidth)
+    for (let i = 0; i < 20; i++) {
+      let total = 0;
+      if (tableConfig.showCheckboxes) {
+        total += Math.max(checkboxPct * M, 60);
+      }
+      columns.forEach((col) => {
+        const pct = parseFloat(col.width || '0') / 100;
+        const minW = parseInt(col.minWidth || '0', 10);
+        total += Math.max(pct * M, minW);
+      });
+
+      if (Math.abs(total - M) < 0.5) break;
+      M = total;
+    }
+
+    return Math.ceil(M);
+  }, [columns, tableConfig.showCheckboxes]);
+
   return (
     <Box
       ref={parentRef}
       sx={{
         borderRadius: 2,
-        height: '650px',
+        flexGrow: 1,
         display: 'flex',
         flexDirection: 'column',
         ...mixins.borderDefault(),
@@ -39,11 +69,13 @@ export const TrackTable = ({
         showCheckboxes={tableConfig.showCheckboxes}
         isAllSelected={tableConfig.isAllSelected}
         onSelectAll={tableConfig.onSelectAll}
+        minWidth={tableMinWidth}
       />
       <Box
         sx={{
           flexGrow: 1,
           overflow: 'visible',
+          minWidth: `${tableMinWidth}px`,
         }}
       >
         <VirtualizedRows
@@ -52,6 +84,7 @@ export const TrackTable = ({
           columns={columns}
           tableConfig={tableConfig}
           rowVirtualizer={rowVirtualizer}
+          minWidth={tableMinWidth}
         />
       </Box>
     </Box>

@@ -9,6 +9,7 @@ interface VirtualizedRowsProps {
   columns: Column<any>[];
   tableConfig: TableConfig;
   rowVirtualizer: any;
+  minWidth: number;
 }
 
 export const VirtualizedRows = ({
@@ -17,11 +18,12 @@ export const VirtualizedRows = ({
   columns,
   tableConfig,
   rowVirtualizer,
+  minWidth,
 }: VirtualizedRowsProps) => {
   return (
     <Box
       sx={{
-        // Account for BOTH header heights (TrackListing + TrackTable)
+        // Total height includes virtualizer paddingStart (table header offset)
         height: `${rowVirtualizer.getTotalSize()}px`,
         width: '100%',
         position: 'relative',
@@ -38,6 +40,7 @@ export const VirtualizedRows = ({
             height: `${virtualRow.size}px`,
             transform: `translateY(${virtualRow.start}px)`,
             ...mixins.tableRowHover(),
+            minWidth: `${minWidth}px`,
             overflow: 'visible',
           }}
         >
@@ -49,6 +52,7 @@ export const VirtualizedRows = ({
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
+                minWidth: '60px',
               }}
             >
               <Checkbox
