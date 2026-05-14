@@ -36,3 +36,6 @@ lerna-debug.log*
 # Compiled JavaScript files in source directories
 src/main/**/*.js
 src/main/**/*.js.map
+
+#tooling
+.opencode
