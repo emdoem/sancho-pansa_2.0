@@ -27,6 +27,88 @@ class MusicLibraryDB {
   public initializePathResolver(musicRootPath: string): void {
     this.pathResolver = new PathResolver(musicRootPath);
     this.migrateToRelativePaths(musicRootPath);
+    this.migrateDotFolders(musicRootPath);
+  }
+
+  private migrateDotFolders(musicRootPath: string): void {
+    const migrationVersion = this.getMetadata('dot_folder_migration');
+    if (migrationVersion === '1') return;
+
+    console.log('Migrating folders with dots...');
+    const tracks = this.db
+      .prepare('SELECT id, file_path FROM tracks')
+      .all() as Array<{ id: string; file_path: string }>;
+
+    let migratedCount = 0;
+    const fs = require('fs');
+
+    // Track renamed dirs to avoid double rename
+    const renamedDirs = new Map<string, string>(); // oldPath -> newPath
+
+    for (const track of tracks) {
+      if (!track.file_path) continue;
+
+      let absolutePath = track.file_path;
+      if (this.pathResolver && this.pathResolver.isRelative(absolutePath)) {
+        absolutePath = this.pathResolver.toAbsolute(absolutePath);
+      }
+
+      // Check if path has dots in directory names (ignore extension)
+      const parsedPath = path.parse(absolutePath);
+      const dirPath = parsedPath.dir;
+
+      // If no dots in dir, skip
+      if (!dirPath.includes('.')) continue;
+
+      // Calculate new absolute path
+      const rootRelativeDir = path.relative(musicRootPath, dirPath);
+
+      // If not under root, skip
+      if (rootRelativeDir.startsWith('..') || path.isAbsolute(rootRelativeDir))
+        continue;
+
+      // Sanitize dir components
+      const parts = rootRelativeDir.split(path.sep);
+      const newParts = parts.map((p) => p.replace(/\./g, ''));
+      const newRelativeDir = newParts.join(path.sep);
+
+      if (rootRelativeDir === newRelativeDir) continue;
+
+      const oldDirAbsolute = path.join(musicRootPath, rootRelativeDir);
+      const newDirAbsolute = path.join(musicRootPath, newRelativeDir);
+      const newAbsolutePath = path.join(newDirAbsolute, parsedPath.base);
+
+      try {
+        // Only rename if we haven't already
+        if (!renamedDirs.has(oldDirAbsolute) && fs.existsSync(oldDirAbsolute)) {
+          // Ensure parent of new dir exists just in case
+          fs.mkdirSync(path.dirname(newDirAbsolute), { recursive: true });
+          fs.renameSync(oldDirAbsolute, newDirAbsolute);
+          renamedDirs.set(oldDirAbsolute, newDirAbsolute);
+        }
+
+        // Update DB
+        let newDbPath = newAbsolutePath;
+        if (this.pathResolver) {
+          newDbPath = this.pathResolver.toRelative(newAbsolutePath);
+        }
+
+        this.db
+          .prepare('UPDATE tracks SET file_path = ? WHERE id = ?')
+          .run(newDbPath, track.id);
+        migratedCount++;
+      } catch (error) {
+        console.warn(
+          `Failed to migrate dot folder for track ${track.id}: ${track.file_path}`,
+          error
+        );
+      }
+    }
+
+    this.setMetadata('dot_folder_migration', '1');
+    console.log(
+      `Dot folder migration complete. Migrated ${migratedCount} tracks.`
+    );
   }
 
   private initializeTables(): void {

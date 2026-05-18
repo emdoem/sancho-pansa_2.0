@@ -58,8 +58,11 @@ export class LibraryOrganizer {
 
   private sanitize(str: string): string {
     if (!str) return 'Unknown';
-    // Remove invalid characters for file systems
-    return str.replace(/[<>:"/\\|?*]/g, '_').trim();
+    // Remove invalid characters for file systems and dots (for portability)
+    return str
+      .replace(/[<>:"/\\|?*]/g, '_')
+      .replace(/\./g, '')
+      .trim();
   }
 
   public async generatePlan(libraryRoot: string): Promise<OrganizePlan> {
